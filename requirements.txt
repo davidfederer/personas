@@ -6,4 +6,8 @@ huggingface-hub==0.34.4            # Latest stable as of Aug 8, 2025  [oai_citat
 tenacity==9.1.2                   # Stable version released Apr 2, 2025  [oai_citation:3‡PyPI](https://pypi.org/project/tenacity/?utm_source=chatgpt.com)
 pydantic
 openai
-                         
+language_tool_python
+textstat
+fasttext 
+fast-langdetect
+
