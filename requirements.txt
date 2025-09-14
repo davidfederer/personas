@@ -1,5 +1,5 @@
 azure-storage-blob==12.19.1
-pandas==2.2.2
+pandas==2.3.2
 python-dotenv==1.1.1
 openpyxl==3.1.5
 huggingface-hub==0.34.4            # Latest stable as of Aug 8, 2025  [oai_citation:0‡GitHub](https://github.com/huggingface/huggingface_hub/releases?utm_source=chatgpt.com) [oai_citation:1‡piwheels.org](https://www.piwheels.org/project/huggingface-hub/?utm_source=chatgpt.com) [oai_citation:2‡PyPI](https://pypi.org/project/huggingface-hub/?utm_source=chatgpt.com)
