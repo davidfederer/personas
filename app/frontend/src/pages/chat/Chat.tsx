@@ -48,7 +48,7 @@ const Chat = () => {
     const [excludeCategory, setExcludeCategory] = useState<string>("");
     const [useSuggestFollowupQuestions, setUseSuggestFollowupQuestions] = useState<boolean>(false);
     const [searchTextEmbeddings, setSearchTextEmbeddings] = useState<boolean>(true);
-    const [searchImageEmbeddings, setSearchImageEmbeddings] = useState<boolean>(true);
+    const [searchImageEmbeddings, setSearchImageEmbeddings] = useState<boolean>(false); // Initialize to false by default
     const [useOidSecurityFilter, setUseOidSecurityFilter] = useState<boolean>(false);
     const [useGroupsSecurityFilter, setUseGroupsSecurityFilter] = useState<boolean>(false);
     const [sendTextSources, setSendTextSources] = useState<boolean>(true);
@@ -98,6 +98,7 @@ const Chat = () => {
     const getConfig = async () => {
         configApi().then(config => {
             setShowMultimodalOptions(config.showMultimodalOptions);
+            setSearchImageEmbeddings(config.ragSearchImageEmbeddings);
             if (config.showMultimodalOptions) {
                 // Always have at least one source enabled, default to text if none specified
                 setSendTextSources(config.ragSendTextSources !== undefined ? config.ragSendTextSources : true);

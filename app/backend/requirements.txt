@@ -326,6 +326,8 @@ packaging==24.1
     # via
     #   opentelemetry-instrumentation
     #   opentelemetry-instrumentation-flask
+pandas==2.1.4
+    # via -r requirements.in
 pillow==10.4.0
     # via -r requirements.in
 priority==2.0.0

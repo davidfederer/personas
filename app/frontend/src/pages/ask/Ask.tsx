@@ -43,7 +43,7 @@ export function Component(): JSX.Element {
     const [excludeCategory, setExcludeCategory] = useState<string>("");
     const [question, setQuestion] = useState<string>("");
     const [searchTextEmbeddings, setSearchTextEmbeddings] = useState<boolean>(true);
-    const [searchImageEmbeddings, setSearchImageEmbeddings] = useState<boolean>(true);
+    const [searchImageEmbeddings, setSearchImageEmbeddings] = useState<boolean>(false); // Initialize to false by default
     const [useOidSecurityFilter, setUseOidSecurityFilter] = useState<boolean>(false);
     const [useGroupsSecurityFilter, setUseGroupsSecurityFilter] = useState<boolean>(false);
     const [showMultimodalOptions, setShowMultimodalOptions] = useState<boolean>(false);
@@ -91,8 +91,8 @@ export function Component(): JSX.Element {
                 setSendTextSources(true);
                 setSendImageSources(true);
                 // Set default vector field settings
-                setSearchTextEmbeddings(true);
-                setSearchImageEmbeddings(true);
+                setSearchTextEmbeddings(config.ragSearchTextEmbeddings);
+                setSearchImageEmbeddings(config.ragSearchImageEmbeddings);
             }
             setUseSemanticRanker(config.showSemanticRankerOption);
             setShowSemanticRankerOption(config.showSemanticRankerOption);
