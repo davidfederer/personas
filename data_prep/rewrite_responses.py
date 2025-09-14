@@ -5,18 +5,25 @@
 import os, json, sys
 import pandas as pd
 from dotenv import load_dotenv
-from openai import OpenAI
+from openai import AzureOpenAI
 
 # ============== .env & client setup ==============
 
 load_dotenv(".azure/Personas/.env")
 
 api_key = os.getenv("AZURE_OPENAI_API_KEY")
-base_url = os.getenv("AZURE_OPENAI_ENDPOINT")
 if not api_key:
     raise RuntimeError("Missing OPENAI_API_KEY")
-client = OpenAI(api_key=api_key, base_url=base_url) if base_url else OpenAI()
+base_url = os.getenv("AZURE_OPENAI_ENDPOINT")
+api_version = os.getenv("AZURE_OPENAI_API_VERSION")
 
+client = AzureOpenAI(
+    api_version=api_version,
+    azure_endpoint=base_url,
+    api_key=api_key,
+)
+
+print(f"AzureOpenAI endpoint: {client._azure_endpoint}", flush=True)
 MODEL = os.getenv("AZURE_OPENAI_CHATGPT_MODEL", "gpt-4.1-mini")
 BATCH_SIZE = int(os.getenv("BATCH_SIZE", "20"))
 print(f"[info] Using model: {MODEL}, batch size: {BATCH_SIZE}", flush=True)
@@ -25,7 +32,7 @@ print(f"[info] API key present: {'yes' if api_key else 'no'}")
 
 
 # ============== Read structured JSONs ==============
-input_json_path = "data_prep/structured_output.json"
+input_json_path = "data/input_datasets/structured_output.json"
 print(f"[stage] Reading structured JSONs from: {input_json_path}", flush=True)
 with open(input_json_path, "r", encoding="utf-8") as f:
     json_list = json.load(f)
