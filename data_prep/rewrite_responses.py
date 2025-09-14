@@ -19,6 +19,9 @@ client = OpenAI(api_key=api_key, base_url=base_url) if base_url else OpenAI()
 
 MODEL = os.getenv("AZURE_OPENAI_CHATGPT_MODEL", "gpt-4.1-mini")
 BATCH_SIZE = int(os.getenv("BATCH_SIZE", "20"))
+print(f"[info] Using model: {MODEL}, batch size: {BATCH_SIZE}", flush=True)
+print(f"[info] API base URL: {base_url}", flush=True)
+print(f"[info] API key present: {'yes' if api_key else 'no'}")
 
 
 # ============== Read structured JSONs ==============
