@@ -25,7 +25,7 @@ client = AzureOpenAI(
 
 print(f"AzureOpenAI endpoint: {client._azure_endpoint}", flush=True)
 MODEL = os.getenv("AZURE_OPENAI_CHATGPT_MODEL", "gpt-4.1-mini")
-BATCH_SIZE = int(os.getenv("BATCH_SIZE", "20"))
+BATCH_SIZE = 1
 print(f"[info] Using model: {MODEL}, batch size: {BATCH_SIZE}", flush=True)
 print(f"[info] API base URL: {base_url}", flush=True)
 print(f"[info] API key present: {'yes' if api_key else 'no'}")
@@ -77,16 +77,16 @@ def _extract_json(s: str):
 
 def call_openai_batch(items):
     payload = json.dumps(items, ensure_ascii=False)
-    resp = client.responses.create(
+    resp = client.chat.completions.create(
         model=MODEL,
-        input=[
-            {"role":"system","content":SYSTEM_PROMPT},
-            {"role":"user","content":USER_INSTR},
-            {"role":"user","content":payload},
+        messages=[
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": USER_INSTR},
+            {"role": "user", "content": payload},
         ],
-        max_output_tokens=2000,
+        max_tokens=2000,
     )
-    out_text = (getattr(resp, "output_text", None) or "").strip()
+    out_text = resp.choices[0].message.content.strip()
     if not out_text:
         raise RuntimeError("OpenAI returned empty output_text for batch.")
     obj = _extract_json(out_text)
@@ -96,7 +96,7 @@ def call_openai_batch(items):
     for rec in obj:
         if not isinstance(rec, dict): continue
         if "idx" in rec and "rewritten_input_text" in rec:
-            out.append({"idx": int(rec["idx"]), "rewritten_input_text": str(rec["rewritten_input_text"])});
+            out.append({"idx": int(rec["idx"]), "rewritten_input_text": str(rec["rewritten_input_text"]) });
     return out
 
 
@@ -129,5 +129,8 @@ for start in range(0, len(rewrite_items), BATCH_SIZE):
         with open(out_path, "w", encoding="utf-8") as f:
             json.dump(out_obj, f, ensure_ascii=False, indent=2)
         print(f"[ok] Saved rewritten JSON to {out_path}")
+        # Print progress every 100 files
+        if (obj_idx + 1) % 100 == 0:
+            print(f"[progress] {obj_idx + 1} files saved.", flush=True)
 
 print("[done] All JSONs rewritten and saved individually.", flush=True)
