@@ -44,7 +44,7 @@ SYSTEM_PROMPT = (
     "Language: EN. Rules:\n"
     "- Make grammar/spelling/casing/punctuation natural and concise (≤60 words unless original is longer).\n"
     "- Preserve meaning and tone. Do NOT add facts or change intent.\n"
-    "- rewrite each response a a recount.\n"
+    "- rewrite each response as a recount.\n"
     "- If input is effectively a non-answer (n/a/none/blank/\"idk\"/etc.), rewrite to: \"No specific feedback provided.\"\n"
     "- Return STRICT JSON only.\n"
 )

@@ -480,15 +480,15 @@ class SearchManager:
                             filename=section.content.filename(), page=section.chunk.page_num
                         ),
                         "sourcefile": section.content.filename(),
-                        "images": [
-                            {
-                                "url": image.url,
-                                "description": image.description,
-                                "boundingbox": image.bbox,
-                                "embedding": image.embedding,
-                            }
-                            for image in section.chunk.images
-                        ],
+                        # "images": [
+                        #     {
+                        #         "url": image.url,
+                        #         "description": image.description,
+                        #         "boundingbox": image.bbox,
+                        #         "embedding": image.embedding,
+                        #     }
+                        #     for image in section.chunk.images
+                        # ],
                         **section.content.acls,
                     }
                     for section_index, section in enumerate(batch)

@@ -40,7 +40,7 @@
         "1": "What is the typical frequency of loyal customers?",
         "2": "What is the main concern of customers who disengage from B&L?",
         "3": "Why can B&L improve customer retention?",
-        "placeholder": "Type a new question (e.g. does my plan cover annual eye exams?)"
+        "placeholder": "Type a new question (e.g. How do customers feel about Best&Less?)"
     },
     "askTitle": "Ask your data",
     "multimodalExamples": {
