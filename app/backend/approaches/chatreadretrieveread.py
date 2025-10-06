@@ -240,9 +240,9 @@ class ChatReadRetrieveReadApproach(Approach):
                 "include_follow_up_questions": bool(overrides.get("suggest_followup_questions")),
                 "past_messages": messages[:-1],
                 "user_query": original_user_query,
-                "text_sources": extra_info.data_points.text,
-                "image_sources": extra_info.data_points.images,
-                "citations": extra_info.data_points.citations,
+                "text_sources": extra_info.data_points.text or [],
+                "image_sources": extra_info.data_points.images or [],
+                "citations": extra_info.data_points.citations or [],
             },
         )
 
@@ -321,7 +321,7 @@ class ChatReadRetrieveReadApproach(Approach):
         if use_vector_search:
             if search_text_embeddings:
                 vectors.append(await self.compute_text_embedding(query_text))
-            if search_image_embeddings:
+            if search_image_embeddings and self.multimodal_enabled and self.image_embeddings_client:
                 vectors.append(await self.compute_multimodal_embedding(query_text))
 
         results = await self.search(

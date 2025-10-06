@@ -102,9 +102,9 @@ class RetrieveThenReadApproach(Approach):
             self.get_system_prompt_variables(overrides.get("prompt_template"))
             | {
                 "user_query": q,
-                "text_sources": extra_info.data_points.text,
+                "text_sources": extra_info.data_points.text or [],
                 "image_sources": extra_info.data_points.images or [],
-                "citations": extra_info.data_points.citations,
+                "citations": extra_info.data_points.citations or [],
             },
         )
 
@@ -165,7 +165,7 @@ class RetrieveThenReadApproach(Approach):
         if use_vector_search:
             if search_text_embeddings:
                 vectors.append(await self.compute_text_embedding(q))
-            if search_image_embeddings:
+            if search_image_embeddings and self.multimodal_enabled and self.image_embeddings_client:
                 vectors.append(await self.compute_multimodal_embedding(q))
 
         results = await self.search(
