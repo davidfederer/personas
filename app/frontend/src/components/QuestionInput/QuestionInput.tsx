@@ -16,52 +16,43 @@ interface Props {
     placeholder?: string;
     clearOnSend?: boolean;
     showSpeechInput?: boolean;
+
+    /** NEW: render only the input field (no internal container/buttons) */
+    bare?: boolean;
+    /** Optional: pass classes for the TextField when `bare` is true */
+    inputClassName?: string;
 }
 
-export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, initQuestion, showSpeechInput }: Props) => {
+export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, initQuestion, showSpeechInput, bare = false, inputClassName }: Props) => {
     const [question, setQuestion] = useState<string>("");
     const { loggedIn } = useContext(LoginContext);
     const { t } = useTranslation();
     const [isComposing, setIsComposing] = useState(false);
 
     useEffect(() => {
-        initQuestion && setQuestion(initQuestion);
+        if (initQuestion) setQuestion(initQuestion);
     }, [initQuestion]);
 
     const sendQuestion = () => {
-        if (disabled || !question.trim()) {
-            return;
-        }
-
-        onSend(question);
-
-        if (clearOnSend) {
-            setQuestion("");
-        }
+        if (disabled || !question.trim()) return;
+        onSend(question.trim());
+        if (clearOnSend) setQuestion("");
     };
 
     const onEnterPress = (ev: React.KeyboardEvent<Element>) => {
         if (isComposing) return;
-
         if (ev.key === "Enter" && !ev.shiftKey) {
             ev.preventDefault();
             sendQuestion();
         }
     };
 
-    const handleCompositionStart = () => {
-        setIsComposing(true);
-    };
-    const handleCompositionEnd = () => {
-        setIsComposing(false);
-    };
+    const handleCompositionStart = () => setIsComposing(true);
+    const handleCompositionEnd = () => setIsComposing(false);
 
     const onQuestionChange = (_ev: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>, newValue?: string) => {
-        if (!newValue) {
-            setQuestion("");
-        } else if (newValue.length <= 1000) {
-            setQuestion(newValue);
-        }
+        if (!newValue) setQuestion("");
+        else if (newValue.length <= 1000) setQuestion(newValue);
     };
 
     const disableRequiredAccessControl = requireLogin && !loggedIn;
@@ -71,6 +62,26 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, init
         placeholder = "Please login to continue...";
     }
 
+    // ---------- Bare mode ----------
+    if (bare) {
+        return (
+            <TextField
+                className={inputClassName}
+                disabled={disableRequiredAccessControl}
+                placeholder={placeholder}
+                multiline
+                resizable={false}
+                borderless
+                value={question}
+                onChange={onQuestionChange}
+                onKeyDown={onEnterPress}
+                onCompositionStart={handleCompositionStart}
+                onCompositionEnd={handleCompositionEnd}
+            />
+        );
+    }
+
+    // ---------- Default UI ----------
     return (
         <Stack horizontal className={styles.questionInputContainer}>
             <TextField
@@ -88,7 +99,13 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, init
             />
             <div className={styles.questionInputButtonsContainer}>
                 <Tooltip content={t("tooltips.submitQuestion")} relationship="label">
-                    <Button size="large" icon={<Send28Filled primaryFill="rgba(115, 118, 225, 1)" />} disabled={sendQuestionDisabled} onClick={sendQuestion} />
+                    <Button
+                        className={styles.sendButton}
+                        size="large"
+                        icon={<Send28Filled primaryFill="#31343e" />}
+                        disabled={sendQuestionDisabled}
+                        onClick={sendQuestion}
+                    />
                 </Tooltip>
             </div>
             {showSpeechInput && <SpeechInput updateQuestion={setQuestion} />}

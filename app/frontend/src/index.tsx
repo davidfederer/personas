@@ -1,3 +1,4 @@
+// src/index.tsx
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { createHashRouter, RouterProvider } from "react-router-dom";
@@ -7,12 +8,22 @@ import { initializeIcons } from "@fluentui/react";
 import { MsalProvider } from "@azure/msal-react";
 import { AuthenticationResult, EventType, PublicClientApplication } from "@azure/msal-browser";
 
+// ✅ Fluent v9 provider so tokens/styles apply everywhere
+import { FluentProvider, webLightTheme /* or webDarkTheme */ } from "@fluentui/react-components";
+
 import "./index.css";
 
-import Chat from "./pages/chat/Chat";
 import LayoutWrapper from "./layoutWrapper";
 import i18next from "./i18n/config";
 import { msalConfig, useLogin } from "./authConfig";
+
+// Pages
+import Dashboard from "./pages/dashboard/dashboard"; // ⬅️ Default route
+import Chat from "./pages/chat/Chat";
+import PersonasPage from "./pages/personas/PersonasPage";
+
+// ⬅️ NEW: analytics + insights pages
+import Voice from "./pages/voice/Voice";
 
 initializeIcons();
 
@@ -21,18 +32,14 @@ const router = createHashRouter([
         path: "/",
         element: <LayoutWrapper />,
         children: [
-            {
-                index: true,
-                element: <Chat />
-            },
-            {
-                path: "qa",
-                lazy: () => import("./pages/ask/Ask")
-            },
-            {
-                path: "*",
-                lazy: () => import("./pages/NoPage")
-            }
+            { index: true, element: <Dashboard /> }, // ⬅️ Default route is Dashboard
+            { path: "chat", element: <Chat /> },
+            { path: "personas", element: <PersonasPage /> },
+
+            { path: "/voice", element: <Voice /> },
+
+            { path: "qa", lazy: () => import("./pages/ask/Ask") },
+            { path: "*", lazy: () => import("./pages/NoPage") }
         ]
     }
 ]);
@@ -74,13 +81,16 @@ const root = ReactDOM.createRoot(document.getElementById("root") as HTMLElement)
         <React.StrictMode>
             <I18nextProvider i18n={i18next}>
                 <HelmetProvider>
-                    {useLogin && msalInstance ? (
-                        <MsalProvider instance={msalInstance}>
+                    {/* ✅ FluentProvider wraps everything so v9 components use theme tokens */}
+                    <FluentProvider theme={webLightTheme} style={{ minHeight: "100vh" }}>
+                        {useLogin && msalInstance ? (
+                            <MsalProvider instance={msalInstance}>
+                                <RouterProvider router={router} />
+                            </MsalProvider>
+                        ) : (
                             <RouterProvider router={router} />
-                        </MsalProvider>
-                    ) : (
-                        <RouterProvider router={router} />
-                    )}
+                        )}
+                    </FluentProvider>
                 </HelmetProvider>
             </I18nextProvider>
         </React.StrictMode>

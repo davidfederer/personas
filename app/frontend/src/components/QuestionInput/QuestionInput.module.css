@@ -1,11 +1,18 @@
 .questionInputContainer {
+    /* keep rounded corners if any parent adds a bg later */
     border-radius: 0.5rem;
-    box-shadow:
-        0px 0.5rem 1rem rgba(0, 0, 0, 0.14),
-        0px 0px 0.125rem rgba(0, 0, 0, 0.12);
+
+    /* no glow/outline */
+    box-shadow: none;
+    background: transparent;
+    border: none;
+
+    /* layout */
     width: 100%;
-    padding: 0.8rem;
-    background: white;
+    padding: 0; /* remove extra vertical offset */
+    display: flex;
+    align-items: center; /* vertically center input + button */
+    gap: 0.5rem; /* small space between input and button */
 }
 
 .questionInputTextArea {
@@ -15,12 +22,26 @@
 
 .questionInputButtonsContainer {
     display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
+    align-items: center; /* center the button vertically */
+    justify-content: center;
+    height: 100%;
+}
+
+/* Give the send button a fixed square so it aligns with the input nicely */
+.sendButton {
+    height: 44px;
+    width: 44px;
+    min-height: 44px;
+    min-width: 44px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
 }
 
 @media (min-width: 992px) {
     .questionInputContainer {
-        height: 5.625rem;
+        height: 5.625rem; /* unchanged, but now centers contents */
     }
 }

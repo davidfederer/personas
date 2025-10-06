@@ -9,7 +9,8 @@ import rehypeRaw from "rehype-raw";
 import styles from "./Answer.module.css";
 import { ChatAppResponse, getCitationFilePath, SpeechConfig } from "../../api";
 import { parseAnswerToHtml } from "./AnswerParser";
-import { AnswerIcon } from "./AnswerIcon";
+// Removed: import { AnswerIcon } from "./AnswerIcon";
+import appLogo from "../../assets/applogo.svg";
 import { SpeechOutputBrowser } from "./SpeechOutputBrowser";
 import { SpeechOutputAzure } from "./SpeechOutputAzure";
 
@@ -64,8 +65,12 @@ export const Answer = ({
     return (
         <Stack className={`${styles.answerContainer} ${isSelected && styles.selected}`} verticalAlign="space-between">
             <Stack.Item>
-                <Stack horizontal horizontalAlign="space-between">
-                    <AnswerIcon />
+                <Stack horizontal horizontalAlign="space-between" verticalAlign="center">
+                    {/* Use app logo as the assistant icon */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <img src={appLogo} alt="Assistant" width={24} height={24} />
+                    </div>
+
                     <div>
                         <IconButton
                             style={{ color: "black" }}

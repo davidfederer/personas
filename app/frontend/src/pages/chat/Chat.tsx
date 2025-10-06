@@ -1,16 +1,19 @@
+// src/pages/chat/Chat.tsx
 import { useRef, useState, useEffect, useContext } from "react";
 import { useTranslation } from "react-i18next";
 import { Helmet } from "react-helmet-async";
 import { Panel, DefaultButton } from "@fluentui/react";
 import readNDJSONStream from "ndjson-readablestream";
+import { useSearchParams, Link, useLocation } from "react-router-dom";
 
-import appLogo from "../../assets/applogo.svg";
+import appLogo from "../../assets/personas-logo-white.png";
+import personaTileLogo from "../logos/personas-logo.png"; // app logo for the persona header tile
 import styles from "./Chat.module.css";
 
 import { chatApi, configApi, RetrievalMode, ChatAppResponse, ChatAppResponseOrError, ChatAppRequest, ResponseMessage, SpeechConfig } from "../../api";
 import { Answer, AnswerError, AnswerLoading } from "../../components/Answer";
 import { QuestionInput } from "../../components/QuestionInput";
-import { ExampleList } from "../../components/Example";
+// import { ExampleList } from "../../components/Example";
 import { UserChatMessage } from "../../components/UserChatMessage";
 import { AnalysisPanel, AnalysisPanelTabs } from "../../components/AnalysisPanel";
 import { HistoryPanel } from "../../components/HistoryPanel";
@@ -23,8 +26,25 @@ import { useLogin, getToken, requireAccessControl } from "../../authConfig";
 import { useMsal } from "@azure/msal-react";
 import { TokenClaimsDisplay } from "../../components/TokenClaimsDisplay";
 import { LoginContext } from "../../loginContext";
-import { LanguagePicker } from "../../i18n/LanguagePicker";
 import { Settings } from "../../components/Settings/Settings";
+
+// Personas
+import { DEFAULT_PERSONAS, Persona, getCustomPersonas } from "../personas/personas";
+
+/* ---------------- Persona persistence helpers ---------------- */
+const LAST_PERSONA_ID_KEY = "last_persona_id";
+const LAST_PERSONA_KEY = "last_persona_json";
+
+function getAllPersonas(): Persona[] {
+    const custom = getCustomPersonas(); // centralized custom store
+    const customIds = new Set(custom.map(p => p.id));
+    const defaults = DEFAULT_PERSONAS.filter(p => !customIds.has(p.id));
+    return [...custom, ...defaults];
+}
+function resolvePersonaById(id: string | null | undefined): Persona | null {
+    if (!id) return null;
+    return getAllPersonas().find(p => p.id === id) ?? null;
+}
 
 const Chat = () => {
     const [isConfigPanelOpen, setIsConfigPanelOpen] = useState(false);
@@ -48,7 +68,7 @@ const Chat = () => {
     const [excludeCategory, setExcludeCategory] = useState<string>("");
     const [useSuggestFollowupQuestions, setUseSuggestFollowupQuestions] = useState<boolean>(false);
     const [searchTextEmbeddings, setSearchTextEmbeddings] = useState<boolean>(true);
-    const [searchImageEmbeddings, setSearchImageEmbeddings] = useState<boolean>(false); // Initialize to false by default
+    const [searchImageEmbeddings, setSearchImageEmbeddings] = useState<boolean>(false);
     const [useOidSecurityFilter, setUseOidSecurityFilter] = useState<boolean>(false);
     const [useGroupsSecurityFilter, setUseGroupsSecurityFilter] = useState<boolean>(false);
     const [sendTextSources, setSendTextSources] = useState<boolean>(true);
@@ -75,7 +95,6 @@ const Chat = () => {
     const [showReasoningEffortOption, setShowReasoningEffortOption] = useState<boolean>(false);
     const [showVectorOption, setShowVectorOption] = useState<boolean>(false);
     const [showUserUpload, setShowUserUpload] = useState<boolean>(false);
-    const [showLanguagePicker, setshowLanguagePicker] = useState<boolean>(false);
     const [showSpeechInput, setShowSpeechInput] = useState<boolean>(false);
     const [showSpeechOutputBrowser, setShowSpeechOutputBrowser] = useState<boolean>(false);
     const [showSpeechOutputAzure, setShowSpeechOutputAzure] = useState<boolean>(false);
@@ -95,12 +114,35 @@ const Chat = () => {
         setIsPlaying
     };
 
+    // Persona plumbing
+    const [searchParams, setSearchParams] = useSearchParams();
+    const location = useLocation();
+    const [activePersona, setActivePersona] = useState<Persona | null>(null);
+    const previousTemplateRef = useRef<string>("");
+    const personaAppliedRef = useRef<boolean>(false);
+
+    const buildPersonaPrompt = (p: Persona) => {
+        const traits = (p.tags ?? []).join(", ");
+        const lines: string[] = [];
+        if (p.promptTemplatePrefix) lines.push(p.promptTemplatePrefix.trim());
+        lines.push(
+            `You are role-playing as a customer persona called "${p.name}".`,
+            `Vertical: ${p.vertical ?? "—"}. Age Range: ${p.ageRange ?? "—"}.`,
+            `Key traits: ${traits || "—"}.`,
+            `Context: ${p.summary || p.description || "—"}.`,
+            "",
+            "Act strictly as this customer. Answer questions *as the customer*, with realistic goals, constraints, and language.",
+            "Keep replies concise and practical unless asked for more detail."
+        );
+        if (p.promptTemplateSuffix) lines.push("", p.promptTemplateSuffix.trim());
+        return lines.join("\n");
+    };
+
     const getConfig = async () => {
         configApi().then(config => {
             setShowMultimodalOptions(config.showMultimodalOptions);
             setSearchImageEmbeddings(config.ragSearchImageEmbeddings);
             if (config.showMultimodalOptions) {
-                // Always have at least one source enabled, default to text if none specified
                 setSendTextSources(config.ragSendTextSources !== undefined ? config.ragSendTextSources : true);
                 setSendImageSources(config.ragSendImageSources);
                 setSearchTextEmbeddings(config.ragSearchTextEmbeddings);
@@ -112,18 +154,11 @@ const Chat = () => {
             setShowQueryRewritingOption(config.showQueryRewritingOption);
             setShowReasoningEffortOption(config.showReasoningEffortOption);
             setStreamingEnabled(config.streamingEnabled);
-            if (!config.streamingEnabled) {
-                setShouldStream(false);
-            }
-            if (config.showReasoningEffortOption) {
-                setReasoningEffort(config.defaultReasoningEffort);
-            }
+            if (!config.streamingEnabled) setShouldStream(false);
+            if (config.showReasoningEffortOption) setReasoningEffort(config.defaultReasoningEffort);
             setShowVectorOption(config.showVectorOption);
-            if (!config.showVectorOption) {
-                setRetrievalMode(RetrievalMode.Text);
-            }
+            if (!config.showVectorOption) setRetrievalMode(RetrievalMode.Text);
             setShowUserUpload(config.showUserUpload);
-            setshowLanguagePicker(config.showLanguagePicker);
             setShowSpeechInput(config.showSpeechInput);
             setShowSpeechOutputBrowser(config.showSpeechOutputBrowser);
             setShowSpeechOutputAzure(config.showSpeechOutputAzure);
@@ -131,9 +166,7 @@ const Chat = () => {
             setShowChatHistoryCosmos(config.showChatHistoryCosmos);
             setShowAgenticRetrievalOption(config.showAgenticRetrievalOption);
             setUseAgenticRetrieval(config.showAgenticRetrievalOption);
-            if (config.showAgenticRetrievalOption) {
-                setRetrieveCount(10);
-            }
+            if (config.showAgenticRetrievalOption) setRetrieveCount(10);
         });
     };
 
@@ -141,8 +174,8 @@ const Chat = () => {
         let answer: string = "";
         let askResponse: ChatAppResponse = {} as ChatAppResponse;
 
-        const updateState = (newContent: string) => {
-            return new Promise(resolve => {
+        const updateState = (newContent: string) =>
+            new Promise(resolve => {
                 setTimeout(() => {
                     answer += newContent;
                     const latestResponse: ChatAppResponse = {
@@ -153,7 +186,7 @@ const Chat = () => {
                     resolve(null);
                 }, 33);
             });
-        };
+
         try {
             setIsStreaming(true);
             for await (const event of readNDJSONStream(responseBody)) {
@@ -164,8 +197,7 @@ const Chat = () => {
                     setIsLoading(false);
                     await updateState(event["delta"]["content"]);
                 } else if (event["context"]) {
-                    // Update context with new keys from latest event
-                    askResponse.context = { ...askResponse.context, ...event["context"] };
+                    askResponse = { ...askResponse, context: { ...askResponse.context, ...event["context"] } };
                 } else if (event["error"]) {
                     throw Error(event["error"]);
                 }
@@ -231,38 +263,36 @@ const Chat = () => {
                         search_image_embeddings: searchImageEmbeddings,
                         send_text_sources: sendTextSources,
                         send_image_sources: sendImageSources,
-                        language: i18n.language,
+                        language: "en",
                         use_agentic_retrieval: useAgenticRetrieval,
                         ...(seed !== null ? { seed: seed } : {})
                     }
                 },
-                // AI Chat Protocol: Client must pass on any session state received from the server
                 session_state: answers.length ? answers[answers.length - 1][1].session_state : null
             };
 
             const response = await chatApi(request, shouldStream, token);
-            if (!response.body) {
-                throw Error("No response body");
-            }
-            if (response.status > 299 || !response.ok) {
-                throw Error(`Request failed with status ${response.status}`);
-            }
+            if (!response.body) throw Error("No response body");
+            if (response.status > 299 || !response.ok) throw Error(`Request failed with status ${response.status}`);
+
             if (shouldStream) {
                 const parsedResponse: ChatAppResponse = await handleAsyncRequest(question, answers, response.body);
                 setAnswers([...answers, [question, parsedResponse]]);
                 if (typeof parsedResponse.session_state === "string" && parsedResponse.session_state !== "") {
-                    const token = client ? await getToken(client) : undefined;
-                    historyManager.addItem(parsedResponse.session_state, [...answers, [question, parsedResponse]], token);
+                    const token2 = client ? await getToken(client) : undefined;
+                    historyManager.addItem(parsedResponse.session_state, [...answers, [question, parsedResponse]], token2);
                 }
             } else {
                 const parsedResponse: ChatAppResponseOrError = await response.json();
-                if (parsedResponse.error) {
-                    throw Error(parsedResponse.error);
-                }
+                if ((parsedResponse as any).error) throw Error((parsedResponse as any).error);
                 setAnswers([...answers, [question, parsedResponse as ChatAppResponse]]);
-                if (typeof parsedResponse.session_state === "string" && parsedResponse.session_state !== "") {
-                    const token = client ? await getToken(client) : undefined;
-                    historyManager.addItem(parsedResponse.session_state, [...answers, [question, parsedResponse as ChatAppResponse]], token);
+                if (typeof (parsedResponse as ChatAppResponse).session_state === "string" && (parsedResponse as ChatAppResponse).session_state !== "") {
+                    const token2 = client ? await getToken(client) : undefined;
+                    historyManager.addItem(
+                        (parsedResponse as ChatAppResponse).session_state,
+                        [...answers, [question, parsedResponse as ChatAppResponse]],
+                        token2
+                    );
                 }
             }
             setSpeechUrls([...speechUrls, null]);
@@ -347,8 +377,6 @@ const Chat = () => {
             case "useSuggestFollowupQuestions":
                 setUseSuggestFollowupQuestions(value);
                 break;
-            case "llmInputs":
-                break;
             case "sendTextSources":
                 setSendTextSources(value);
                 break;
@@ -370,69 +398,189 @@ const Chat = () => {
         }
     };
 
-    const onExampleClicked = (example: string) => {
-        makeApiRequest(example);
-    };
+    const { t } = useTranslation();
 
-    const onShowCitation = (citation: string, index: number) => {
-        if (activeCitation === citation && activeAnalysisPanelTab === AnalysisPanelTabs.CitationTab && selectedAnswer === index) {
-            setActiveAnalysisPanelTab(undefined);
-        } else {
-            setActiveCitation(citation);
-            setActiveAnalysisPanelTab(AnalysisPanelTabs.CitationTab);
+    // Persona hydration
+    useEffect(() => {
+        let id = searchParams.get("persona");
+
+        if (!id) {
+            const statePersona = (location.state as any)?.personaId as string | undefined;
+            if (statePersona) {
+                id = statePersona;
+                const next = new URLSearchParams(searchParams);
+                next.set("persona", statePersona);
+                setSearchParams(next);
+            }
+        }
+        if (!id) {
+            const last = localStorage.getItem(LAST_PERSONA_ID_KEY) || undefined;
+            if (last) {
+                id = last;
+                const next = new URLSearchParams(searchParams);
+                next.set("persona", last);
+                setSearchParams(next);
+            }
+        }
+        if (!id) {
+            setActivePersona(null);
+            if (personaAppliedRef.current) {
+                setPromptTemplate(previousTemplateRef.current || "");
+                personaAppliedRef.current = false;
+            }
+            return;
         }
 
-        setSelectedAnswer(index);
-    };
-
-    const onToggleTab = (tab: AnalysisPanelTabs, index: number) => {
-        if (activeAnalysisPanelTab === tab && selectedAnswer === index) {
-            setActiveAnalysisPanelTab(undefined);
-        } else {
-            setActiveAnalysisPanelTab(tab);
+        let p = resolvePersonaById(id);
+        if (!p) {
+            try {
+                const snapRaw = localStorage.getItem(LAST_PERSONA_KEY);
+                if (snapRaw) {
+                    const snap = JSON.parse(snapRaw);
+                    p = resolvePersonaById(snap?.id) ?? null;
+                }
+            } catch {
+                /* noop */
+            }
+        }
+        if (!p) {
+            const next = new URLSearchParams(searchParams);
+            next.delete("persona");
+            setSearchParams(next);
+            return;
         }
 
-        setSelectedAnswer(index);
+        setActivePersona(p);
+
+        // Persist selection so it always carries over to Chat
+        try {
+            localStorage.setItem(LAST_PERSONA_ID_KEY, p.id);
+            localStorage.setItem(
+                LAST_PERSONA_KEY,
+                JSON.stringify({
+                    id: p.id,
+                    name: p.name,
+                    icon: p.icon,
+                    ageRange: p.ageRange,
+                    vertical: p.vertical,
+                    isDefault: !!p.isDefault
+                })
+            );
+        } catch {
+            /* noop */
+        }
+
+        if (!personaAppliedRef.current) previousTemplateRef.current = promptTemplate;
+
+        const personaPrompt = buildPersonaPrompt(p);
+        setPromptTemplate(personaPrompt);
+        personaAppliedRef.current = true;
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [searchParams, setSearchParams, location.search, location.state]);
+
+    const clearActivePersona = () => {
+        const next = new URLSearchParams(searchParams);
+        next.delete("persona");
+        next.delete("q");
+        setSearchParams(next);
+        try {
+            localStorage.removeItem(LAST_PERSONA_ID_KEY);
+            localStorage.removeItem(LAST_PERSONA_KEY);
+        } catch {
+            /* noop */
+        }
     };
 
-    const { t, i18n } = useTranslation();
+    /* ============================== RENDER =============================== */
+
+    const starterQuestions = [
+        "What do you think about this new feature idea?",
+        "How much would you pay for this service?",
+        "What's your biggest pain point in this area?",
+        "Would this product fit into your daily routine?"
+    ];
 
     return (
         <div className={styles.container}>
-            {/* Setting the page title using react-helmet-async */}
+            {/* Tab title from i18n: frontend/src/locales/en/translation.json -> pageTitle */}
             <Helmet>
-                <title>{t("pageTitle")}</title>
+                <title>{t("pageTitle", { defaultValue: "Personas" })}</title>
             </Helmet>
-            <div className={styles.commandsSplitContainer}>
-                <div className={styles.commandsContainer}>
+
+            {/* Top command bar */}
+            <div className="mx-auto max-w-5xl px-4 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
                     {((useLogin && showChatHistoryCosmos) || showChatHistoryBrowser) && (
                         <HistoryButton className={styles.commandButton} onClick={() => setIsHistoryPanelOpen(!isHistoryPanelOpen)} />
                     )}
                 </div>
-                <div className={styles.commandsContainer}>
+                <div className="flex items-center gap-2">
                     <ClearChatButton className={styles.commandButton} onClick={clearChat} disabled={!lastQuestionRef.current || isLoading} />
                     {showUserUpload && <UploadFile className={styles.commandButton} disabled={!loggedIn} />}
                     <SettingsButton className={styles.commandButton} onClick={() => setIsConfigPanelOpen(!isConfigPanelOpen)} />
                 </div>
             </div>
-            <div className={styles.chatRoot} style={{ marginLeft: isHistoryPanelOpen ? "300px" : "0" }}>
-                <div className={styles.chatContainer}>
-                    {!lastQuestionRef.current ? (
-                        <div className={styles.chatEmptyState}>
-                            <img src={appLogo} alt="App logo" width="120" height="120" />
 
-                            <h1 className={styles.chatEmptyStateTitle}>{t("chatEmptyStateTitle")}</h1>
-                            <h2 className={styles.chatEmptyStateSubtitle}>{t("chatEmptyStateSubtitle")}</h2>
-                            {showLanguagePicker && <LanguagePicker onLanguageChange={newLang => i18n.changeLanguage(newLang)} />}
-
-                            <ExampleList onExampleClicked={onExampleClicked} useMultimodalAnswering={showMultimodalOptions} />
+            <div className="mx-auto max-w-5xl px-4">
+                {/* Persona header */}
+                {activePersona && (
+                    <div className="mt-4 mb-3 rounded-2xl border bg-card shadow-sm p-4">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                {/* Brand-colored tile with app logo */}
+                                <div className="w-12 h-12 rounded-xl grid place-items-center" style={{ backgroundColor: "#343741" }} aria-hidden="true">
+                                    <img src={personaTileLogo} alt="Persona logo" className="w-7 h-7" />
+                                </div>
+                                <div>
+                                    <h2 className="text-lg font-semibold">Chat with {activePersona.name}</h2>
+                                    <div className="flex flex-wrap gap-1 mt-1">
+                                        {(activePersona.tags ?? []).slice(0, 3).map((t, i) => (
+                                            <span key={i} className="text-xs rounded-full border px-2 py-0.5 text-muted-foreground">
+                                                {t}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Link to="/personas" state={{ from: "chat", personaId: activePersona.id }}>
+                                    <button className="h-9 px-3 rounded-md border bg-background hover:bg-muted transition-smooth">Switch Persona</button>
+                                </Link>
+                                <button onClick={clearActivePersona} className="h-9 px-3 rounded-md border bg-background hover:bg-muted transition-smooth">
+                                    Clear
+                                </button>
+                            </div>
                         </div>
-                    ) : (
-                        <div className={styles.chatMessageStream}>
-                            {isStreaming &&
-                                streamedAnswers.map((streamedAnswer, index) => (
-                                    <div key={index}>
-                                        <UserChatMessage message={streamedAnswer[0]} />
+                    </div>
+                )}
+
+                {/* Empty state */}
+                {!lastQuestionRef.current ? (
+                    <div className="mt-10 grid place-items-center text-center">
+                        <img src={appLogo} alt="App logo" width={100} height={100} className="opacity-80" />
+                        <h1 className="mt-4 text-2xl font-bold">Start a conversation</h1>
+                        <p className="text-muted-foreground mt-1">Ask anything. Your persona will respond in character.</p>
+
+                        <div className="w-full max-w-3xl mt-6 grid grid-cols-1 md:grid-cols-2 gap-2">
+                            {starterQuestions.map((q, i) => (
+                                <button
+                                    key={i}
+                                    onClick={() => makeApiRequest(q)}
+                                    className="text-left justify-start h-auto p-3 text-sm rounded-md border hover:bg-muted transition-smooth"
+                                >
+                                    {q}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                ) : (
+                    /* Chat stream */
+                    <div className={`${styles.chatMessageStream} space-y-4`}>
+                        {isStreaming &&
+                            streamedAnswers.map((streamedAnswer, index) => (
+                                <div key={`s-${index}`} className="space-y-2">
+                                    <UserChatMessage message={streamedAnswer[0]} />
+                                    <div className="rounded-2xl border bg-card shadow-sm p-0">
                                         <div className={styles.chatMessageGpt}>
                                             <Answer
                                                 isStreaming={true}
@@ -441,9 +589,9 @@ const Chat = () => {
                                                 index={index}
                                                 speechConfig={speechConfig}
                                                 isSelected={false}
-                                                onCitationClicked={c => onShowCitation(c, index)}
-                                                onThoughtProcessClicked={() => onToggleTab(AnalysisPanelTabs.ThoughtProcessTab, index)}
-                                                onSupportingContentClicked={() => onToggleTab(AnalysisPanelTabs.SupportingContentTab, index)}
+                                                onCitationClicked={c => setActiveCitation(c)}
+                                                onThoughtProcessClicked={() => setActiveAnalysisPanelTab(AnalysisPanelTabs.ThoughtProcessTab)}
+                                                onSupportingContentClicked={() => setActiveAnalysisPanelTab(AnalysisPanelTabs.SupportingContentTab)}
                                                 onFollowupQuestionClicked={q => makeApiRequest(q)}
                                                 showFollowupQuestions={useSuggestFollowupQuestions && answers.length - 1 === index}
                                                 showSpeechOutputAzure={showSpeechOutputAzure}
@@ -451,11 +599,14 @@ const Chat = () => {
                                             />
                                         </div>
                                     </div>
-                                ))}
-                            {!isStreaming &&
-                                answers.map((answer, index) => (
-                                    <div key={index}>
-                                        <UserChatMessage message={answer[0]} />
+                                </div>
+                            ))}
+
+                        {!isStreaming &&
+                            answers.map((answer, index) => (
+                                <div key={`a-${index}`} className="space-y-2">
+                                    <UserChatMessage message={answer[0]} />
+                                    <div className="rounded-2xl border bg-card shadow-sm p-0">
                                         <div className={styles.chatMessageGpt}>
                                             <Answer
                                                 isStreaming={false}
@@ -464,9 +615,9 @@ const Chat = () => {
                                                 index={index}
                                                 speechConfig={speechConfig}
                                                 isSelected={selectedAnswer === index && activeAnalysisPanelTab !== undefined}
-                                                onCitationClicked={c => onShowCitation(c, index)}
-                                                onThoughtProcessClicked={() => onToggleTab(AnalysisPanelTabs.ThoughtProcessTab, index)}
-                                                onSupportingContentClicked={() => onToggleTab(AnalysisPanelTabs.SupportingContentTab, index)}
+                                                onCitationClicked={c => setActiveCitation(c)}
+                                                onThoughtProcessClicked={() => setActiveAnalysisPanelTab(AnalysisPanelTabs.ThoughtProcessTab)}
+                                                onSupportingContentClicked={() => setActiveAnalysisPanelTab(AnalysisPanelTabs.SupportingContentTab)}
                                                 onFollowupQuestionClicked={q => makeApiRequest(q)}
                                                 showFollowupQuestions={useSuggestFollowupQuestions && answers.length - 1 === index}
                                                 showSpeechOutputAzure={showSpeechOutputAzure}
@@ -474,113 +625,122 @@ const Chat = () => {
                                             />
                                         </div>
                                     </div>
-                                ))}
-                            {isLoading && (
-                                <>
-                                    <UserChatMessage message={lastQuestionRef.current} />
+                                </div>
+                            ))}
+
+                        {isLoading && (
+                            <>
+                                <UserChatMessage message={lastQuestionRef.current} />
+                                <div className="rounded-2xl border bg-card shadow-sm p-4">
                                     <div className={styles.chatMessageGptMinWidth}>
                                         <AnswerLoading />
                                     </div>
-                                </>
-                            )}
-                            {error ? (
-                                <>
-                                    <UserChatMessage message={lastQuestionRef.current} />
+                                </div>
+                            </>
+                        )}
+
+                        {error ? (
+                            <>
+                                <UserChatMessage message={lastQuestionRef.current} />
+                                <div className="rounded-2xl border bg-card shadow-sm p-4">
                                     <div className={styles.chatMessageGptMinWidth}>
-                                        <AnswerError error={error.toString()} onRetry={() => makeApiRequest(lastQuestionRef.current)} />
+                                        <AnswerError error={String(error)} onRetry={() => makeApiRequest(lastQuestionRef.current)} />
                                     </div>
-                                </>
-                            ) : null}
-                            <div ref={chatMessageStreamEnd} />
-                        </div>
-                    )}
+                                </div>
+                            </>
+                        ) : null}
 
-                    <div className={styles.chatInput}>
-                        <QuestionInput
-                            clearOnSend
-                            placeholder={t("defaultExamples.placeholder")}
-                            disabled={isLoading}
-                            onSend={question => makeApiRequest(question)}
-                            showSpeechInput={showSpeechInput}
-                        />
+                        <div ref={chatMessageStreamEnd} />
                     </div>
+                )}
+
+                {/* Sticky input — transparent wrapper, moved further down */}
+                <div className={`${styles.chatInput} mt-10 md:mt-14`} style={{ background: "transparent", boxShadow: "none", border: "none" }}>
+                    <QuestionInput
+                        clearOnSend
+                        placeholder={activePersona ? `Ask as “${activePersona.name}”. What would this customer say/ask?` : "Ask your persona anything..."}
+                        disabled={isLoading}
+                        onSend={question => makeApiRequest(question)}
+                        showSpeechInput={showSpeechInput}
+                    />
                 </div>
-
-                {answers.length > 0 && activeAnalysisPanelTab && (
-                    <AnalysisPanel
-                        className={styles.chatAnalysisPanel}
-                        activeCitation={activeCitation}
-                        onActiveTabChanged={x => onToggleTab(x, selectedAnswer)}
-                        citationHeight="810px"
-                        answer={answers[selectedAnswer][1]}
-                        activeTab={activeAnalysisPanelTab}
-                    />
-                )}
-
-                {((useLogin && showChatHistoryCosmos) || showChatHistoryBrowser) && (
-                    <HistoryPanel
-                        provider={historyProvider}
-                        isOpen={isHistoryPanelOpen}
-                        notify={!isStreaming && !isLoading}
-                        onClose={() => setIsHistoryPanelOpen(false)}
-                        onChatSelected={answers => {
-                            if (answers.length === 0) return;
-                            setAnswers(answers);
-                            lastQuestionRef.current = answers[answers.length - 1][0];
-                        }}
-                    />
-                )}
-
-                <Panel
-                    headerText={t("labels.headerText")}
-                    isOpen={isConfigPanelOpen}
-                    isBlocking={false}
-                    onDismiss={() => setIsConfigPanelOpen(false)}
-                    closeButtonAriaLabel={t("labels.closeButton")}
-                    onRenderFooterContent={() => <DefaultButton onClick={() => setIsConfigPanelOpen(false)}>{t("labels.closeButton")}</DefaultButton>}
-                    isFooterAtBottom={true}
-                >
-                    <Settings
-                        promptTemplate={promptTemplate}
-                        temperature={temperature}
-                        retrieveCount={retrieveCount}
-                        maxSubqueryCount={maxSubqueryCount}
-                        resultsMergeStrategy={resultsMergeStrategy}
-                        seed={seed}
-                        minimumSearchScore={minimumSearchScore}
-                        minimumRerankerScore={minimumRerankerScore}
-                        useSemanticRanker={useSemanticRanker}
-                        useSemanticCaptions={useSemanticCaptions}
-                        useQueryRewriting={useQueryRewriting}
-                        reasoningEffort={reasoningEffort}
-                        excludeCategory={excludeCategory}
-                        includeCategory={includeCategory}
-                        retrievalMode={retrievalMode}
-                        showMultimodalOptions={showMultimodalOptions}
-                        sendTextSources={sendTextSources}
-                        sendImageSources={sendImageSources}
-                        searchTextEmbeddings={searchTextEmbeddings}
-                        searchImageEmbeddings={searchImageEmbeddings}
-                        showSemanticRankerOption={showSemanticRankerOption}
-                        showQueryRewritingOption={showQueryRewritingOption}
-                        showReasoningEffortOption={showReasoningEffortOption}
-                        showVectorOption={showVectorOption}
-                        useOidSecurityFilter={useOidSecurityFilter}
-                        useGroupsSecurityFilter={useGroupsSecurityFilter}
-                        useLogin={!!useLogin}
-                        loggedIn={loggedIn}
-                        requireAccessControl={requireAccessControl}
-                        shouldStream={shouldStream}
-                        streamingEnabled={streamingEnabled}
-                        useSuggestFollowupQuestions={useSuggestFollowupQuestions}
-                        showSuggestFollowupQuestions={true}
-                        showAgenticRetrievalOption={showAgenticRetrievalOption}
-                        useAgenticRetrieval={useAgenticRetrieval}
-                        onChange={handleSettingsChange}
-                    />
-                    {useLogin && <TokenClaimsDisplay />}
-                </Panel>
             </div>
+
+            {/* Panels */}
+            {answers.length > 0 && activeAnalysisPanelTab && (
+                <AnalysisPanel
+                    className={styles.chatAnalysisPanel}
+                    activeCitation={activeCitation}
+                    onActiveTabChanged={x => setActiveAnalysisPanelTab(x)}
+                    citationHeight="810px"
+                    answer={answers[selectedAnswer][1]}
+                    activeTab={activeAnalysisPanelTab}
+                />
+            )}
+
+            {((useLogin && showChatHistoryCosmos) || showChatHistoryBrowser) && (
+                <HistoryPanel
+                    provider={historyProvider}
+                    isOpen={isHistoryPanelOpen}
+                    notify={!isStreaming && !isLoading}
+                    onClose={() => setIsHistoryPanelOpen(false)}
+                    onChatSelected={answers2 => {
+                        if (answers2.length === 0) return;
+                        setAnswers(answers2);
+                        lastQuestionRef.current = answers2[answers2.length - 1][0];
+                    }}
+                />
+            )}
+
+            <Panel
+                headerText={t("labels.headerText")}
+                isOpen={isConfigPanelOpen}
+                isBlocking={false}
+                onDismiss={() => setIsConfigPanelOpen(false)}
+                closeButtonAriaLabel={t("labels.closeButton")}
+                onRenderFooterContent={() => <DefaultButton onClick={() => setIsConfigPanelOpen(false)}>{t("labels.closeButton")}</DefaultButton>}
+                isFooterAtBottom={true}
+            >
+                <Settings
+                    promptTemplate={promptTemplate}
+                    temperature={temperature}
+                    retrieveCount={retrieveCount}
+                    maxSubqueryCount={maxSubqueryCount}
+                    resultsMergeStrategy={resultsMergeStrategy}
+                    seed={seed}
+                    minimumSearchScore={minimumSearchScore}
+                    minimumRerankerScore={minimumRerankerScore}
+                    useSemanticRanker={useSemanticRanker}
+                    useSemanticCaptions={useSemanticCaptions}
+                    useQueryRewriting={useQueryRewriting}
+                    reasoningEffort={reasoningEffort}
+                    excludeCategory={excludeCategory}
+                    includeCategory={includeCategory}
+                    retrievalMode={retrievalMode}
+                    showMultimodalOptions={showMultimodalOptions}
+                    sendTextSources={sendTextSources}
+                    sendImageSources={sendImageSources}
+                    searchTextEmbeddings={searchTextEmbeddings}
+                    searchImageEmbeddings={searchImageEmbeddings}
+                    showSemanticRankerOption={showSemanticRankerOption}
+                    showQueryRewritingOption={showQueryRewritingOption}
+                    showReasoningEffortOption={showReasoningEffortOption}
+                    showVectorOption={showVectorOption}
+                    useOidSecurityFilter={useOidSecurityFilter}
+                    useGroupsSecurityFilter={useGroupsSecurityFilter}
+                    useLogin={!!useLogin}
+                    loggedIn={loggedIn}
+                    requireAccessControl={requireAccessControl}
+                    shouldStream={shouldStream}
+                    streamingEnabled={streamingEnabled}
+                    useSuggestFollowupQuestions={useSuggestFollowupQuestions}
+                    showSuggestFollowupQuestions={true}
+                    showAgenticRetrievalOption={showAgenticRetrievalOption}
+                    useAgenticRetrieval={useAgenticRetrieval}
+                    onChange={handleSettingsChange}
+                />
+                {useLogin && <TokenClaimsDisplay />}
+            </Panel>
         </div>
     );
 };
