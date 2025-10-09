@@ -11,8 +11,7 @@ type NavItem = { to: string; label: string };
 const navItems: NavItem[] = [
     { to: "/", label: "Dashboard" },
     { to: "/personas", label: "Personas" },
-    { to: "/chat", label: "Chat" },
-    { to: "/voice", label: "Voice" }
+    { to: "/chat", label: "Chat" }
 ];
 
 const pillBase = "px-3 py-1.5 rounded-full text-sm transition-smooth";

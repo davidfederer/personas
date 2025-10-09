@@ -1,33 +1,32 @@
 .questionInputContainer {
-    /* keep rounded corners if any parent adds a bg later */
-    border-radius: 0.5rem;
+    border-radius: 1rem; /* more rounded */
+    background: var(--card); /* optional: if you want a background */
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--border);
 
-    /* no glow/outline */
-    box-shadow: none;
-    background: transparent;
-    border: none;
-
-    /* layout */
     width: 100%;
-    padding: 0; /* remove extra vertical offset */
+    padding: 0.5rem; /* inner padding so input + buttons have breathing room */
     display: flex;
-    align-items: center; /* vertically center input + button */
-    gap: 0.5rem; /* small space between input and button */
+    align-items: center;
+    gap: 0.5rem;
 }
 
 .questionInputTextArea {
-    width: 100%;
-    line-height: 2.5rem;
+    flex: 1;
+    line-height: 1.5rem;
+    /* optionally give some padding inside */
+    padding: 0.5rem;
+    border-radius: 0.75rem;
+    background: transparent;
 }
 
 .questionInputButtonsContainer {
     display: flex;
-    align-items: center; /* center the button vertically */
-    justify-content: center;
-    height: 100%;
+    align-items: center;
+    gap: 0.5rem;
 }
 
-/* Give the send button a fixed square so it aligns with the input nicely */
+/* Send button as a circle */
 .sendButton {
     height: 44px;
     width: 44px;
@@ -37,11 +36,25 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 8px;
+    border-radius: 50%; /* make circle */
 }
 
+/* Voice button same circle style */
+.voiceButton {
+    height: 44px;
+    width: 44px;
+    min-height: 44px;
+    min-width: 44px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+/* Larger screen height adjustment if needed */
 @media (min-width: 992px) {
     .questionInputContainer {
-        height: 5.625rem; /* unchanged, but now centers contents */
+        height: auto; /* let content define it */
     }
 }

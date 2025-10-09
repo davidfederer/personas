@@ -72,7 +72,7 @@ const Chat = () => {
     const [useOidSecurityFilter, setUseOidSecurityFilter] = useState<boolean>(false);
     const [useGroupsSecurityFilter, setUseGroupsSecurityFilter] = useState<boolean>(false);
     const [sendTextSources, setSendTextSources] = useState<boolean>(true);
-    const [sendImageSources, setSendImageSources] = useState<boolean>(false);
+    const [sendImageSources, setSendImageSources] = useState<boolean>(true);
 
     const lastQuestionRef = useRef<string>("");
     const chatMessageStreamEnd = useRef<HTMLDivElement | null>(null);

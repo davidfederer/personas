@@ -17,13 +17,29 @@ interface Props {
     clearOnSend?: boolean;
     showSpeechInput?: boolean;
 
-    /** NEW: render only the input field (no internal container/buttons) */
+    /** NEW: callback when voice button clicked */
+    onVoiceClick?: () => void;
+
+    /** NEW: whether to show the voice button next to send */
+    showVoiceButton?: boolean;
+
+    /** NEW: render only the input field (no container/buttons) */
     bare?: boolean;
-    /** Optional: pass classes for the TextField when `bare` is true */
     inputClassName?: string;
 }
 
-export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, initQuestion, showSpeechInput, bare = false, inputClassName }: Props) => {
+export const QuestionInput = ({
+    onSend,
+    disabled,
+    placeholder,
+    clearOnSend,
+    initQuestion,
+    showSpeechInput,
+    onVoiceClick,
+    showVoiceButton = false,
+    bare = false,
+    inputClassName
+}: Props) => {
     const [question, setQuestion] = useState<string>("");
     const { loggedIn } = useContext(LoginContext);
     const { t } = useTranslation();
@@ -62,7 +78,7 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, init
         placeholder = "Please login to continue...";
     }
 
-    // ---------- Bare mode ----------
+    // Bare mode (no wrapper UI)
     if (bare) {
         return (
             <TextField
@@ -81,7 +97,6 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, init
         );
     }
 
-    // ---------- Default UI ----------
     return (
         <Stack horizontal className={styles.questionInputContainer}>
             <TextField
@@ -107,6 +122,28 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, init
                         onClick={sendQuestion}
                     />
                 </Tooltip>
+
+                {showVoiceButton && onVoiceClick && (
+                    <Tooltip content={t("tooltips.voice")} relationship="label">
+                        <Button
+                            className={styles.voiceButton}
+                            size="large"
+                            icon={
+                                // you can replace with your mic icon
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path
+                                        d="M12 14C13.6569 14 15 12.6569 15 11V5C15 3.34315 13.6569 2 12 2C10.3431 2 9 3.34315 9 5V11C9 12.6569 10.3431 14 12 14Z"
+                                        fill="#31343e"
+                                    />
+                                    <path d="M19 11C19 14.3137 16.3137 17 13 17H11C7.68629 17 5 14.3137 5 11" stroke="#31343e" strokeWidth="2" />
+                                    <path d="M12 17V21" stroke="#31343e" strokeWidth="2" strokeLinecap="round" />
+                                </svg>
+                            }
+                            onClick={onVoiceClick}
+                            disabled={disabled}
+                        />
+                    </Tooltip>
+                )}
             </div>
             {showSpeechInput && <SpeechInput updateQuestion={setQuestion} />}
         </Stack>

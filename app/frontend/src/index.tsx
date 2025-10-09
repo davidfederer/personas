@@ -23,7 +23,6 @@ import Chat from "./pages/chat/Chat";
 import PersonasPage from "./pages/personas/PersonasPage";
 
 // ⬅️ NEW: analytics + insights pages
-import Voice from "./pages/voice/Voice";
 
 initializeIcons();
 
@@ -35,8 +34,6 @@ const router = createHashRouter([
             { index: true, element: <Dashboard /> }, // ⬅️ Default route is Dashboard
             { path: "chat", element: <Chat /> },
             { path: "personas", element: <PersonasPage /> },
-
-            { path: "/voice", element: <Voice /> },
 
             { path: "qa", lazy: () => import("./pages/ask/Ask") },
             { path: "*", lazy: () => import("./pages/NoPage") }

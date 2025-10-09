@@ -1,3 +1,4 @@
+// app/frontend/src/pages/personas/PersonasPage.tsx
 import * as React from "react";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -18,7 +19,7 @@ import {
 } from "@fluentui/react-components";
 
 // Lucide icons
-import { MessageSquare, Users, Info, Wand2, Save, Edit3, Laptop, Heart, Briefcase, ShoppingCart, Trash2, Mic } from "lucide-react";
+import { MessageSquare, Users, Info, Wand2, Save, Edit3, Laptop, Heart, Briefcase, ShoppingCart, Trash2 } from "lucide-react";
 
 // Personas (defaults) + types + CENTRALIZED persistence
 import {
@@ -43,19 +44,10 @@ const LAST_PERSONA_ID_KEY = "last_persona_id";
 const LAST_PERSONA_KEY = "last_persona_json";
 
 /* ---------------------- Lightweight “logs.log” store ---------------------- */
-/** We persist per-persona usage so the dashboard can surface:
- *  - total chats per persona
- *  - when it was last used (for “X ago”)
- *
- * Format (localStorage key: "logs.log"):
- * {
- *   [personaId]: { chats: number, lastUsed: number /* epoch ms *\/ }
- * }
- */
-const USAGE_KEY = "logs.log";
-
 type UsageRecord = { chats: number; lastUsed: number };
 type UsageIndex = Record<string, UsageRecord>;
+
+const USAGE_KEY = "logs.log";
 
 function loadUsage(): UsageIndex {
     try {
@@ -115,6 +107,26 @@ const personaImages = import.meta.glob("./images/*.{png,jpg,jpeg,webp,svg}", {
     as: "url"
 }) as Record<string, string>;
 
+/* ---------------------- Image loading (for CUSTOMS) ----------------------- */
+/** Load any files placed under personas/images/custom */
+const customPersonaImages = import.meta.glob("./images/custom/*.{png,jpg,jpeg,webp,svg}", {
+    eager: true,
+    as: "url"
+}) as Record<string, string>;
+
+/** Map seeded custom persona IDs -> provided filenames */
+const CUSTOM_ID_TO_FILENAME: Record<string, string> = {
+    // 0–5
+    "p-parent-0-5-frequent": "0-5; Frequent Shopper.png",
+    "p-parent-0-5-regular": "0-5; Regular Shopper.png",
+    "p-parent-0-5-occasional": "0-5; Occasional:Rare Shopper.png",
+    // 6–13
+    "p-parent-6-13-frequent": "6-13; Frequent Shopper.png",
+    "p-parent-6-13-regular": "6-13; Regular Shopper.png",
+    "p-parent-6-13-occasional": "6-13; Occasional:Rare Shopper.png"
+};
+
+/** Default ID -> filename (already in ./images) */
 const DEFAULT_ID_TO_FILENAME: Record<string, string> = {
     "p-budget-parent": "budget-parent.png",
     "p-plus-size-fashionista": "plus-size-fashionista.png",
@@ -138,14 +150,32 @@ function getImageUrlByFile(fileName: string | undefined): string | undefined {
     return undefined;
 }
 
+function getCustomImageUrlByFile(fileName: string | undefined): string | undefined {
+    if (!fileName) return undefined;
+    for (const [path, url] of Object.entries(customPersonaImages)) {
+        const base = path.split("/").pop()!;
+        if (base === fileName) return url;
+    }
+    return undefined;
+}
+
+/** Decide which visual to show for a persona */
 function getPreviewVisual(p: Persona): { type: "image" | "emoji"; url?: string; emoji?: string } {
+    // Defaults -> use ./images mapping
     if (p.isDefault) {
         const file = DEFAULT_ID_TO_FILENAME[p.id];
         const url = getImageUrlByFile(file);
         if (url) return { type: "image", url };
         return { type: "emoji", emoji: p.icon ?? "🧩" };
     }
-    return { type: "emoji", emoji: p.icon ?? "🤖" }; // custom personas default to robot
+
+    // Customs -> try explicit custom image match first
+    const customFile = CUSTOM_ID_TO_FILENAME[p.id];
+    const customUrl = getCustomImageUrlByFile(customFile);
+    if (customUrl) return { type: "image", url: customUrl };
+
+    // Otherwise fall back to emoji/icon
+    return { type: "emoji", emoji: p.icon ?? "🤖" };
 }
 
 /* -------------------------------------------------------------------------- */
@@ -847,20 +877,7 @@ export default function PersonasPage() {
                                 Chat
                             </FButton>
                         </Link>
-
-                        {/* Voice circular button (true circle now) */}
-                        <Link to={toVoiceHref(p)} state={{ personaId: p.id }} onClick={() => onVoiceClick(p)} title="Talk with voice">
-                            <FButton
-                                appearance="subtle"
-                                icon={<Mic className="w-5 h-5" />}
-                                aria-label="Voice"
-                                shape="circular"
-                                size="large"
-                                className={ICON_BTN_LG}
-                                // Enforce 1:1 in case Fluent’s internal min-width kicks in
-                                style={{ aspectRatio: "1 / 1" }}
-                            />
-                        </Link>
+                        {/* Voice button removed */}
                     </div>
                 </div>
             </div>

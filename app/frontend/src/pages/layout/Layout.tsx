@@ -87,10 +87,6 @@ const Layout: React.FC = () => {
                         <NavLink to="/chat" className={({ isActive }) => `${pillBase} ${isActive ? pillActive : pillInactive}`}>
                             Chat
                         </NavLink>
-
-                        <NavLink to="/voice" className={({ isActive }) => `${pillBase} ${isActive ? pillActive : pillInactive}`}>
-                            Voice
-                        </NavLink>
                     </nav>
 
                     {/* Right: login + hamburger */}
@@ -137,13 +133,6 @@ const Layout: React.FC = () => {
                             onClick={() => setMenuOpen(false)}
                         >
                             Chat
-                        </NavLink>
-                        <NavLink
-                            to="/voice"
-                            className={({ isActive }) => `${pillBase} w-max ${isActive ? pillActive : "text-white/90 hover:bg-white/10"}`}
-                            onClick={() => setMenuOpen(false)}
-                        >
-                            Voice
                         </NavLink>
                     </div>
                 </div>
