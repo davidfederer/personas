@@ -101,6 +101,7 @@ from prepdocslib.blobmanager import AdlsBlobManager, BlobManager
 from prepdocslib.embeddings import ImageEmbeddings
 from prepdocslib.filestrategy import UploadUserFileStrategy
 from prepdocslib.listfilestrategy import File
+from utils.intent_classifier import classify_intent
 
 bp = Blueprint("routes", __name__, static_folder="static")
 # Fix Windows registry issue with mimetypes
@@ -230,6 +231,32 @@ async def chat(auth_claims: dict[str, Any]):
                 current_app.config[CONFIG_CHAT_HISTORY_COSMOS_ENABLED],
                 current_app.config[CONFIG_CHAT_HISTORY_BROWSER_ENABLED],
             )
+
+
+         # --- Intent classification and dynamic parameter adjustment ---
+        user_question = request_json["messages"][-1]["content"]
+        openai_client = current_app.config[CONFIG_OPENAI_CLIENT]
+        intent = await classify_intent(user_question, openai_client)
+
+        logging.info(f"Classified intent: {intent}")
+
+        # Set defaults
+        reranker_score = 1.5  # Default for general use
+        temperature = 0.1
+
+        if "quantitative" in intent or "population" in intent:
+            reranker_score = 0.1  # Very low for quantitative
+        elif "insights" in intent or "qualitative" in intent:
+            reranker_score = 1.6  # Over 1.5 for insights
+        elif "creative" in intent:
+            temperature = 0.9     # High temperature for creative
+
+        # Pass these as overrides/context
+        context["intent"] = intent
+        context["reranker_score"] = reranker_score
+        context["temperature"] = temperature
+        # --- End intent logic ---
+
         result = await approach.run(
             request_json["messages"],
             context=context,
@@ -758,7 +785,7 @@ def create_app():
 
     # Log levels should be one of https://docs.python.org/3/library/logging.html#logging-levels
     # Set root level to WARNING to avoid seeing overly verbose logs from SDKS
-    logging.basicConfig(level=logging.WARNING)
+    logging.basicConfig(level=logging.INFO)
     # Set our own logger levels to INFO by default
     app_level = os.getenv("APP_LOG_LEVEL", "INFO")
     app.logger.setLevel(os.getenv("APP_LOG_LEVEL", app_level))
