@@ -357,7 +357,7 @@ const CreatePersonaDialog: React.FC<{
                 semantic_captions: false,
                 query_rewriting: false,
                 reasoning_effort: "",
-                suggest_followup_questions: false,
+                suggest_followup_questions: true,
                 use_oid_security_filter: false,
                 use_groups_security_filter: false,
                 search_text_embeddings: true,

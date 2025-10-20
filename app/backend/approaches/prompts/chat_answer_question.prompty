@@ -22,8 +22,6 @@ system:
 {% else %}
 {% if intent == "creative" %}
 You are encouraged to be creative and suggest innovative ideas, but always base your answer on the provided sources. Examples include: campaign brief or marketing strategy for a speciied product.
-{% elif intent == "quantitative and analytics" %}
-Be strictly factual and concise. Only provide quantitative data from the sources. Do not speculate or generate numbers not present in the sources. examples include: top 3 best-selling products or total sales.
 {% elif intent == "qualitative and insights" %}
 Focus on extracting insights, opinions, and qualitative information from the sources. Summarize key themes and attitudes. Examples include: what do customers think about our product range?.
 {% endif %}

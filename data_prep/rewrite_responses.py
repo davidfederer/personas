@@ -6,21 +6,23 @@ import os, json, sys
 import pandas as pd
 from dotenv import load_dotenv
 from openai import AzureOpenAI
+from azure.identity import DefaultAzureCredential
 
 # ============== .env & client setup ==============
 
 load_dotenv(".azure/Personas/.env")
 
-api_key = os.getenv("AZURE_OPENAI_API_KEY")
-if not api_key:
-    raise RuntimeError("Missing OPENAI_API_KEY")
 base_url = os.getenv("AZURE_OPENAI_ENDPOINT")
 api_version = os.getenv("AZURE_OPENAI_API_VERSION")
+
+# Use Azure managed identity for authentication
+credential = DefaultAzureCredential()
+token_provider = lambda: credential.get_token("https://cognitiveservices.azure.com/.default").token
 
 client = AzureOpenAI(
     api_version=api_version,
     azure_endpoint=base_url,
-    api_key=api_key,
+    azure_ad_token_provider=token_provider,
 )
 
 print(f"AzureOpenAI endpoint: {client._azure_endpoint}", flush=True)
@@ -28,11 +30,11 @@ MODEL = os.getenv("AZURE_OPENAI_CHATGPT_MODEL", "gpt-4.1-mini")
 BATCH_SIZE = 1
 print(f"[info] Using model: {MODEL}, batch size: {BATCH_SIZE}", flush=True)
 print(f"[info] API base URL: {base_url}", flush=True)
-print(f"[info] API key present: {'yes' if api_key else 'no'}")
+print(f"[info] Using Azure managed identity authentication", flush=True)
 
 
 # ============== Read structured JSONs ==============
-input_json_path = "data/input_datasets/structured_output.json"
+input_json_path = "data_prep/input_datasets/structured_output.json"
 print(f"[stage] Reading structured JSONs from: {input_json_path}", flush=True)
 with open(input_json_path, "r", encoding="utf-8") as f:
     json_list = json.load(f)
@@ -42,9 +44,10 @@ print(f"[ok] Loaded {len(json_list)} JSON objects", flush=True)
 SYSTEM_PROMPT = (
     "You are a meticulous survey editor in a batch-cleaning job.\n"
     "Language: EN. Rules:\n"
-    "- Make grammar/spelling/casing/punctuation natural and concise (≤60 words unless original is longer).\n"
+    "- Make grammar/spelling/casing/punctuation natural and reflective of the original text.\n"
     "- Preserve meaning and tone. Do NOT add facts or change intent.\n"
     "- rewrite each response as a recount.\n"
+    "- remove non-textual elements like '\n', break and newline characters.\n"
     "- If input is effectively a non-answer (n/a/none/blank/\"idk\"/etc.), rewrite to: \"No specific feedback provided.\"\n"
     "- Return STRICT JSON only.\n"
 )
@@ -124,8 +127,12 @@ for start in range(0, len(rewrite_items), BATCH_SIZE):
         # Create a copy to avoid mutating the input list
         out_obj = dict(obj)
         out_obj["Description"] = rec["rewritten_input_text"]
+        
+        # Use Id field for filename (contains Come-back-Later Code)
+        file_identifier = out_obj.get("Id", obj_idx)
+        out_path = os.path.join(data_dir, f"response_{file_identifier}.json")
+        
         # Save as individual JSON file
-        out_path = os.path.join(data_dir, f"file{out_obj['Id']}.json")
         with open(out_path, "w", encoding="utf-8") as f:
             json.dump(out_obj, f, ensure_ascii=False, indent=2)
         print(f"[ok] Saved rewritten JSON to {out_path}")

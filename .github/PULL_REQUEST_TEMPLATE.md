@@ -1,6 +1,6 @@
 ## Purpose
 
-<!-- Describe the intention of the changes being proposed. What problem does it solve or functionality does it add? -->
+<!-- Describe the ion of the changes being proposed. What problem does it solve or functionality does it add? -->
 
 
 ## Does this introduce a breaking change?

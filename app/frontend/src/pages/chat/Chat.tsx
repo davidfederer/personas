@@ -494,10 +494,9 @@ const Chat = () => {
     /* ============================== RENDER =============================== */
 
     const starterQuestions = [
-        "What do you think about this new feature idea?",
-        "How much would you pay for this service?",
-        "What's your biggest pain point in this area?",
-        "Would this product fit into your daily routine?"
+        "What is the typical frequency of loyal customers?",
+        "What is the main concern of customers who disengage from B&L?",
+        "Why can B&L improve customer retention?"
     ];
 
     return (

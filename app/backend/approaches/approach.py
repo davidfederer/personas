@@ -145,7 +145,7 @@ class Approach(ABC):
         "gpt-5-mini": GPTReasoningModelSupport(streaming=True, minimal_effort=True),
     }
     # Set a higher token limit for GPT reasoning models
-    RESPONSE_DEFAULT_TOKEN_LIMIT = 1024
+    RESPONSE_DEFAULT_TOKEN_LIMIT = 2048 # 1024
     RESPONSE_REASONING_DEFAULT_TOKEN_LIMIT = 8192
 
     def __init__(

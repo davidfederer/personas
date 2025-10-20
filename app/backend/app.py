@@ -244,12 +244,15 @@ async def chat(auth_claims: dict[str, Any]):
         reranker_score = 1.5  # Default for general use
         temperature = 0.1
 
-        if "quantitative" in intent or "population" in intent:
-            reranker_score = 0.1  # Very low for quantitative
-        elif "insights" in intent or "qualitative" in intent:
-            reranker_score = 1.6  # Over 1.5 for insights
-        elif "creative" in intent:
-            temperature = 0.9     # High temperature for creative
+        if intent == "creative":
+            temperature = 0.9
+
+        # if "quantitative" in intent or "population" in intent:
+        #     reranker_score = 0.1  # Very low for quantitative
+        # elif "insights" in intent or "qualitative" in intent:
+        #     reranker_score = 1.6  # Over 1.5 for insights
+        # elif "creative" in intent:
+        #     temperature = 0.9     # High temperature for creative
 
         # Pass these as overrides/context
         context["intent"] = intent

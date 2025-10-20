@@ -68,7 +68,7 @@ export const QuestionInput = ({
 
     const onQuestionChange = (_ev: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>, newValue?: string) => {
         if (!newValue) setQuestion("");
-        else if (newValue.length <= 1000) setQuestion(newValue);
+        else if (newValue.length <= 4000) setQuestion(newValue); // Increased to ~1 A4 page
     };
 
     const disableRequiredAccessControl = requireLogin && !loggedIn;

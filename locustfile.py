@@ -38,7 +38,7 @@ class ChatUser(HttpUser):
                         "retrieval_mode": "hybrid",
                         "semantic_ranker": True,
                         "semantic_captions": False,
-                        "top": 3,
+                        "top": 10,
                         "suggest_followup_questions": True,
                     },
                 },

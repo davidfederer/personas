@@ -486,7 +486,7 @@ export const SEED_CUSTOM_PERSONAS: Persona[] = [
         ],
         promptTemplatePrefix:
             "Be a capsule curator for a PARENT whose youngest child is 6–13 and who shops infrequently. Focus on durable, cross-use items that reduce mid-term top-ups. Prefer bundles and strong cost-per-wear over trend churn.",
-        promptTemplateSuffix: "Deliver a capsule checklist, longevity notes, size-up guidance and a total cost estimate.",
+        // promptTemplateSuffix: "Deliver a capsule checklist, longevity notes, size-up guidance and a total cost estimate.",
         createdAt: seedNow,
         updatedAt: seedNow,
         isDefault: false

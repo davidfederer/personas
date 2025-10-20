@@ -4,7 +4,7 @@ import os
 async def classify_intent(question: str, openai_client: AsyncOpenAI) -> str:
     prompt = (
         "Classify the following user question into one of these categories: "
-        "qualitative and insights, quantitative and analytics, or creative.\n"
+        "qualitative and insights, or creative.\n"
         f"Question: {question}\n"
         "Category:"
     )
