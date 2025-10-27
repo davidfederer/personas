@@ -149,7 +149,8 @@ export async function getChatHistoryListApi(count: number, continuationToken: st
     const headers = await getHeaders(idToken);
     let url = `${BACKEND_URI}/chat_history/sessions?count=${count}`;
     if (continuationToken) {
-        url += `&continuationToken=${continuationToken}`;
+        // url += `&continuationToken=${continuationToken}`;
+        url += `&continuation_token=${encodeURIComponent(continuationToken)}`;
     }
 
     const response = await fetch(url.toString(), {

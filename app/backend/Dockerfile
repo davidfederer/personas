@@ -1,4 +1,4 @@
-FROM python:3.11-bullseye
+FROM mcr.microsoft.com/mirror/docker/library/python:3.11-bullseye
 
 WORKDIR /app
 

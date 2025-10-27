@@ -237,7 +237,7 @@
       "value": "${USE_CHAT_HISTORY_BROWSER=false}"
     },
     "useChatHistoryCosmos": {
-      "value": "${USE_CHAT_HISTORY_COSMOS=false}"
+      "value": "${USE_CHAT_HISTORY_COSMOS=true}"
     },
     "cosmosDbSkuName": {
       "value": "${AZURE_COSMOSDB_SKU=serverless}"

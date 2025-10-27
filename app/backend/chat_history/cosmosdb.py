@@ -32,6 +32,7 @@ async def post_chat_history(auth_claims: dict[str, Any]):
     entra_oid = auth_claims.get("oid")
     if not entra_oid:
         return jsonify({"error": "User OID not found"}), 401
+        # entra_oid = "00000000-0000-0000-0000-000000000000"  # Default OID for unauthenticated users
 
     try:
         request_json = await request.get_json()
