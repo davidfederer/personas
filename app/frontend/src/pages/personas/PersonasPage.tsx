@@ -757,12 +757,12 @@ export default function PersonasPage() {
         return <Heart className="w-6 h-6 text-[#31343f]" />;
     };
 
-    // Shared 72x72 image frame (consistent alignment)
+    // Shared image frame (consistent alignment)
     const ImageFrame: React.FC<{
         visual: ReturnType<typeof getPreviewVisual>;
         alt: string;
     }> = ({ visual, alt }) => (
-        <div className="w-[72px] h-[72px] rounded-xl bg-white shadow-sm grid place-items-center overflow-hidden shrink-0">
+        <div className="w-[64px] h-[64px] rounded-xl bg-white shadow-sm grid place-items-center overflow-hidden shrink-0">
             {visual.type === "image" ? (
                 <img src={visual.url} alt={alt} className="max-w-full max-h-full object-contain" />
             ) : visual.emoji ? (
@@ -791,13 +791,14 @@ export default function PersonasPage() {
         return (
             <div className="group rounded-2xl border bg-card shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
                 {/* Card header */}
-                <div className="p-4 pb-3 relative">
+                <div className="p-5 pb-3 relative">
                     <div className="flex items-start justify-between">
                         <div className="flex items-center gap-3 min-w-0">
                             <ImageFrame visual={visual} alt={`${p.name} avatar`} />
-                            <div className="min-w-0">
-                                <h3 className="text-lg font-semibold leading-tight truncate">{p.name}</h3>
-                                <p className="text-xs text-muted-foreground">Age: {p.ageRange ?? "—"}</p>
+                            <div className="flex-1 min-w-0">
+                                <h3 className="mt-1.5 text-lg font-semibold leading-tight break-normal whitespace-normal">
+                                    {p.name}
+                                </h3>
                             </div>
                         </div>
 
@@ -805,6 +806,7 @@ export default function PersonasPage() {
                         <div className="flex items-center gap-2 ml-3">
                             {!p.isDefault && (
                                 <FButton
+                                    size="small"
                                     appearance="subtle"
                                     aria-label="Delete persona"
                                     icon={<Trash2 className="w-4 h-4" />}
@@ -813,6 +815,7 @@ export default function PersonasPage() {
                                 />
                             )}
                             <FButton
+                                size="small"
                                 appearance="subtle"
                                 aria-label="View details"
                                 icon={<Info className="w-4 h-4" />}
@@ -822,7 +825,8 @@ export default function PersonasPage() {
                         </div>
                     </div>
 
-                    <p className="mt-3 text-sm text-muted-foreground line-clamp-2">{p.summary}</p>
+                    <p className="mt-3 text-sm text-muted-foreground line-clamp-2 break-normal whitespace-normal">{p.summary}</p>
+                    <p className="mt-2 text-xs text-muted-foreground">Age: {p.ageRange ?? "—"}</p>
                 </div>
 
                 {/* Card body */}
@@ -847,7 +851,13 @@ export default function PersonasPage() {
                             <p className="text-sm font-medium text-muted-foreground mb-2">Try an example</p>
                             <div className="flex flex-wrap gap-2">
                                 {p.examples.slice(0, 2).map((ex, i) => (
-                                    <Link key={i} to={toChatHref(p, ex)} state={{ personaId: p.id }} onClick={() => onChatClick(p)} className={pillClass}>
+                                    <Link
+                                        key={i}
+                                        to={toChatHref(p, ex)}
+                                        state={{ personaId: p.id }}
+                                        onClick={() => onChatClick(p)}
+                                        className={pillClass}
+                                    >
                                         {ex}
                                     </Link>
                                 ))}
@@ -868,21 +878,32 @@ export default function PersonasPage() {
                     </div>
 
                     {/* Last used (small, unobtrusive) */}
-                    <div className="text-xs text-muted-foreground">Last used: {stats.lastUsedTs ? formatAgo(stats.lastUsedTs) : "—"}</div>
+                    <div className="text-xs text-muted-foreground">
+                        Last used: {stats.lastUsedTs ? formatAgo(stats.lastUsedTs) : "—"}
+                    </div>
 
                     {/* Actions */}
                     <div className="flex gap-2 pt-2 items-center">
-                        <Link to={toChatHref(p)} state={{ personaId: p.id }} onClick={() => onChatClick(p)} className="flex-1">
-                            <FButton appearance="primary" icon={<MessageSquare className="w-4 h-4" />} className={`w-full ${BRAND_BTN}`}>
+                        <Link
+                            to={toChatHref(p)}
+                            state={{ personaId: p.id }}
+                            onClick={() => onChatClick(p)}
+                            className="flex-1"
+                        >
+                            <FButton
+                                appearance="primary"
+                                icon={<MessageSquare className="w-4 h-4" />}
+                                className={`w-full ${BRAND_BTN}`}
+                            >
                                 Chat
                             </FButton>
                         </Link>
-                        {/* Voice button removed */}
                     </div>
                 </div>
             </div>
         );
     };
+
 
     return (
         <div className="pt-20 min-h-screen">
@@ -912,7 +933,7 @@ export default function PersonasPage() {
                 {custom.length > 0 && (
                     <>
                         {sectionTitle("Your personas")}
-                        {/* Slightly wider cards by limiting to 3 columns at xl */}
+                        {/* Three-up layout at large sizes while keeping text breathable */}
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6 mb-10">
                             {custom.map(p => (
                                 <PersonaCard key={p.id} p={p} />
@@ -923,7 +944,7 @@ export default function PersonasPage() {
 
                 {/* Default / Starter personas */}
                 {sectionTitle("Starter personas")}
-                {/* Slightly wider cards here too */}
+                {/* Three-up layout at large sizes while keeping text breathable */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
                     {defaults.map(p => (
                         <PersonaCard key={p.id} p={p} />
