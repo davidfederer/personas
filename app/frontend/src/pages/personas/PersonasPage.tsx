@@ -789,7 +789,7 @@ export default function PersonasPage() {
         const visual = getPreviewVisual(p);
 
         return (
-            <div className="group rounded-2xl border bg-card shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+            <div className="group rounded-2xl border bg-card shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col h-full">
                 {/* Card header */}
                 <div className="p-5 pb-3 relative">
                     <div className="flex items-start justify-between">
@@ -830,56 +830,58 @@ export default function PersonasPage() {
                 </div>
 
                 {/* Card body */}
-                <div className="p-4 space-y-4">
-                    {/* Traits */}
-                    {p.tags && p.tags.length > 0 && (
-                        <div>
-                            <p className="text-sm font-medium text-muted-foreground mb-2">Key Traits</p>
-                            <div className="flex flex-wrap gap-2">
-                                {(p.tags ?? []).slice(0, 4).map((t, i) => (
-                                    <span key={i} className={pillClass}>
-                                        {t}
-                                    </span>
-                                ))}
+                <div className="p-4 pt-3 flex flex-col h-full">
+                    <div className="flex-1 space-y-4">
+                        {/* Traits */}
+                        {p.tags && p.tags.length > 0 && (
+                            <div>
+                                <p className="text-sm font-medium text-muted-foreground mb-2">Key Traits</p>
+                                <div className="flex flex-wrap gap-2">
+                                    {(p.tags ?? []).slice(0, 4).map((t, i) => (
+                                        <span key={i} className={pillClass}>
+                                            {t}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Examples */}
+                        {p.examples && p.examples.length > 0 && (
+                            <div>
+                                <p className="text-sm font-medium text-muted-foreground mb-2">Try an example</p>
+                                <div className="flex flex-wrap gap-2">
+                                    {p.examples.slice(0, 2).map((ex, i) => (
+                                        <Link
+                                            key={i}
+                                            to={toChatHref(p, ex)}
+                                            state={{ personaId: p.id }}
+                                            onClick={() => onChatClick(p)}
+                                            className={pillClass}
+                                        >
+                                            {ex}
+                                        </Link>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Stats */}
+                        <div className="flex items-center gap-8 text-sm">
+                            <div>
+                                <p className="font-medium">{stats.conversations}</p>
+                                <p className="text-muted-foreground">Conversations</p>
+                            </div>
+                            <div>
+                                <p className="font-medium">{stats.insights}</p>
+                                <p className="text-muted-foreground">Insights</p>
                             </div>
                         </div>
-                    )}
 
-                    {/* Examples */}
-                    {p.examples && p.examples.length > 0 && (
-                        <div>
-                            <p className="text-sm font-medium text-muted-foreground mb-2">Try an example</p>
-                            <div className="flex flex-wrap gap-2">
-                                {p.examples.slice(0, 2).map((ex, i) => (
-                                    <Link
-                                        key={i}
-                                        to={toChatHref(p, ex)}
-                                        state={{ personaId: p.id }}
-                                        onClick={() => onChatClick(p)}
-                                        className={pillClass}
-                                    >
-                                        {ex}
-                                    </Link>
-                                ))}
-                            </div>
+                        {/* Last used (small, unobtrusive) */}
+                        <div className="text-xs text-muted-foreground">
+                            Last used: {stats.lastUsedTs ? formatAgo(stats.lastUsedTs) : "—"}
                         </div>
-                    )}
-
-                    {/* Stats */}
-                    <div className="flex items-center gap-8 text-sm">
-                        <div>
-                            <p className="font-medium">{stats.conversations}</p>
-                            <p className="text-muted-foreground">Conversations</p>
-                        </div>
-                        <div>
-                            <p className="font-medium">{stats.insights}</p>
-                            <p className="text-muted-foreground">Insights</p>
-                        </div>
-                    </div>
-
-                    {/* Last used (small, unobtrusive) */}
-                    <div className="text-xs text-muted-foreground">
-                        Last used: {stats.lastUsedTs ? formatAgo(stats.lastUsedTs) : "—"}
                     </div>
 
                     {/* Actions */}
