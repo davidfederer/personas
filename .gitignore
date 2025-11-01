@@ -154,28 +154,10 @@ data/
 .DS_Store
 
 # images
-*.pngERROR: failed deploying service 'backend': remote build failed: 2025/10/20 08:13:06 Downloading source code...
-2025/10/20 08:13:07 Finished downloading source code
-2025/10/20 08:13:08 Using acb_vol_0c7ef1f7-b2f1-4537-a11c-9bc334ad87f4 as the home volume
-2025/10/20 08:13:08 Setting up Docker configuration...
-2025/10/20 08:13:08 Successfully set up Docker configuration
-2025/10/20 08:13:08 Logging in to registry: personasacru4po4gcddovuo.azurecr.io
-2025/10/20 08:13:09 Successfully logged into personasacru4po4gcddovuo.azurecr.io
-2025/10/20 08:13:09 Executing step ID: build. Timeout(sec): 28800, Working directory: '', Network: ''
-2025/10/20 08:13:09 Scanning for dependencies...
-2025/10/20 08:13:09 Successfully scanned dependencies
-2025/10/20 08:13:09 Launching container with name: build
-Sending build context to Docker daemon  32.53MB
-Step 1/6 : FROM python:3.11-bullseye
-Head "https://registry-1.docker.io/v2/library/python/manifests/3.11-bullseye": received unexpected HTTP status: 503 Service Unavailable
-2025/10/20 08:13:11 Container failed during run: build. No retries remaining.
-failed to run step ID: build: exit status 1
-
-Run ID: cr7 failed after 5s. Error: failed during run, err: exit status 1
-
 *.jpg
 *.jpeg
 *.gif
+*.png
 
 # spreadsheets
 *.xlsx

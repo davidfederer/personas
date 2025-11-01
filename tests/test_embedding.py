@@ -1,7 +1,7 @@
 # import os
 # from openai import AzureOpenAI
 # import dotenv
-# dotenv.load_dotenv('.azure/Personas/.env')
+# dotenv.load_dotenv('.azure/personas-dev/.env')
 
 # # Print all relevant environment variables
 # print("AZURE_OPENAI_API_KEY:", os.getenv("AZURE_OPENAI_API_KEY"))
@@ -38,7 +38,7 @@ import dotenv
 from openai import AzureOpenAI
 
 # Load environment variables exactly as prepdocs.py does
-dotenv.load_dotenv('.azure/Personas/.env')
+dotenv.load_dotenv('.azure/personas-dev/.env')
 
 # Use the same variable names as prepdocs.py
 api_key = os.getenv("AZURE_OPENAI_API_KEY")
