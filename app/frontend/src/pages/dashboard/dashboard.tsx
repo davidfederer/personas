@@ -2,6 +2,7 @@ import * as React from "react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { MessageSquare, Users } from "lucide-react";
+import { DisclaimerFooter } from "../../components/DisclaimerFooter";
 
 /**
  * Brand colors — KEEPING your palette as requested.
@@ -166,6 +167,7 @@ export default function Dashboard() {
                     </div>
                 </div>
             </div>
+            <DisclaimerFooter />
         </div>
     );
 }

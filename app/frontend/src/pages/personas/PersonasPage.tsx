@@ -1,6 +1,7 @@
 // app/frontend/src/pages/personas/PersonasPage.tsx
 import * as React from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { DisclaimerFooter } from "../../components/DisclaimerFooter";
 
 import {
     Button as FButton,
@@ -952,6 +953,7 @@ export default function PersonasPage() {
                         <PersonaCard key={p.id} p={p} />
                     ))}
                 </div>
+                <DisclaimerFooter />
             </div>
 
             {/* ---------------------- Delete Confirmation ---------------------- */}

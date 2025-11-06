@@ -27,6 +27,7 @@ import { useMsal } from "@azure/msal-react";
 import { TokenClaimsDisplay } from "../../components/TokenClaimsDisplay";
 import { LoginContext } from "../../loginContext";
 import { Settings } from "../../components/Settings/Settings";
+import { DisclaimerFooter } from "../../components/DisclaimerFooter";
 
 // Personas
 import { DEFAULT_PERSONAS, Persona, getCustomPersonas } from "../personas/personas";
@@ -664,6 +665,8 @@ const Chat = () => {
                     />
                 </div>
             </div>
+
+            <DisclaimerFooter className="mx-auto max-w-5xl px-4 pb-6" />
 
             {/* Panels */}
             {answers.length > 0 && activeAnalysisPanelTab && (

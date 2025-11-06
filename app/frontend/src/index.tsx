@@ -21,6 +21,7 @@ import { msalConfig, useLogin } from "./authConfig";
 import Dashboard from "./pages/dashboard/dashboard"; // ⬅️ Default route
 import Chat from "./pages/chat/Chat";
 import PersonasPage from "./pages/personas/PersonasPage";
+import DisclaimerPage from "./pages/DisclaimerPage";
 
 // ⬅️ NEW: analytics + insights pages
 
@@ -34,6 +35,7 @@ const router = createHashRouter([
             { index: true, element: <Dashboard /> }, // ⬅️ Default route is Dashboard
             { path: "chat", element: <Chat /> },
             { path: "personas", element: <PersonasPage /> },
+            { path: "disclaimer", element: <DisclaimerPage /> },
 
             { path: "qa", lazy: () => import("./pages/ask/Ask") },
             { path: "*", lazy: () => import("./pages/NoPage") }
