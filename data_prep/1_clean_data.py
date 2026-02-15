@@ -8,14 +8,17 @@ from azure.identity import DefaultAzureCredential
 from openai import AzureOpenAI
 
 
-def process_merged_headers(file_path: str, output_json_path: str = None) -> pd.DataFrame:
+def process_merged_headers(file_path: str, output_json_path: str = None, header_rows: int = 2) -> pd.DataFrame:
     """
-    Read an Excel file with merged cells in first 2 rows, concatenate with row 3
-    to create single header row, and return as DataFrame.
+    Read an Excel file with merged cells in first N rows, concatenate to create single header row,
+    and return as DataFrame.
     
     Args:
         file_path: Path to the Excel file
         output_json_path: Optional path to save JSON output
+        header_rows: Number of rows to use for headers (default=2). 
+                     If 2: concatenates merged cells from rows 1-2 only
+                     If 3: concatenates merged cells from rows 1-2 with row 3
         
     Returns:
         pandas DataFrame with concatenated headers
@@ -24,8 +27,8 @@ def process_merged_headers(file_path: str, output_json_path: str = None) -> pd.D
     wb = openpyxl.load_workbook(file_path)
     ws = wb.active
     
-    # Get all merged cell ranges in the first 2 rows
-    merged_ranges = [mr for mr in ws.merged_cells.ranges if mr.min_row <= 2]
+    # Get all merged cell ranges in the first N-1 rows (merged cells don't include the last header row if header_rows=3)
+    merged_ranges = [mr for mr in ws.merged_cells.ranges if mr.min_row <= min(header_rows, 2)]
     
     # Create a mapping of column index to merged cell values
     merged_cell_values = {}
@@ -44,27 +47,47 @@ def process_merged_headers(file_path: str, output_json_path: str = None) -> pd.D
                     merged_cell_values[col] = []
                 merged_cell_values[col].append(str(cell_value))
     
-    # Build the final header row by concatenating merged values with row 3
+    # Build the final header row based on header_rows parameter
     num_cols = ws.max_column
     final_headers = []
     
-    for col in range(1, num_cols + 1):
-        # Get values from merged cells in rows 1-2
-        prefix_parts = merged_cell_values.get(col, [])
+    if header_rows == 3:
+        # --- LOGIC: For merged cells in first 3 rows ---
+        # Build the final header row by concatenating merged values with row 3
+        for col in range(1, num_cols + 1):
+            # Get values from merged cells in rows 1-2
+            prefix_parts = merged_cell_values.get(col, [])
+            
+            # Get value from row 3
+            row3_value = ws.cell(3, col).value
+            row3_str = str(row3_value) if row3_value else ""
+            
+            # Concatenate all parts
+            all_parts = prefix_parts + [row3_str] if row3_str else prefix_parts
+            
+            # Join with separator
+            final_header = " - ".join([part for part in all_parts if part])
+            final_headers.append(final_header if final_header else f"Column_{col}")
         
-        # Get value from row 3
-        row3_value = ws.cell(3, col).value
-        row3_str = str(row3_value) if row3_value else ""
-        
-        # Concatenate all parts
-        all_parts = prefix_parts + [row3_str] if row3_str else prefix_parts
-        
-        # Join with separator
-        final_header = " - ".join([part for part in all_parts if part])
-        final_headers.append(final_header if final_header else f"Column_{col}")
+        # Read the data starting from row 4 (after the 3 header rows)
+        df = pd.read_excel(file_path, header=None, skiprows=3)
     
-    # Read the data starting from row 4 (after the 3 header rows)
-    df = pd.read_excel(file_path, header=None, skiprows=3)
+    elif header_rows == 2:
+        # --- LOGIC: For merged cells in first 2 rows only ---
+        # Build the final header row by concatenating merged values from rows 1-2 only
+        for col in range(1, num_cols + 1):
+            # Get values from merged cells in rows 1-2
+            prefix_parts = merged_cell_values.get(col, [])
+            
+            # Join with separator
+            final_header = " - ".join([part for part in prefix_parts if part])
+            final_headers.append(final_header if final_header else f"Column_{col}")
+        
+        # Read the data starting from row 3 (after the 2 header rows)
+        df = pd.read_excel(file_path, header=None, skiprows=2)
+    
+    else:
+        raise ValueError(f"header_rows must be 2 or 3, got {header_rows}")
     
     # Trim to actual column count
     df = df.iloc[:, :len(final_headers)]
@@ -143,22 +166,27 @@ def clean_df(df: pd.DataFrame, use_llm: bool = False) -> pd.DataFrame:
         # Kmart patterns
         r'\[BandL_Spring22_Kmart_W120\.(png|jpg)\]': 'Kmart',
         r'\[Kmart_\(120px\)\.(png|jpg)\]': 'Kmart',
+        r'\[BL_Tiles100_Kmart\.(png|jpg)\]': 'Kmart',
         
         # Target patterns
         r'\[BandL_Spring22_Target_W120\.(png|jpg)\]': 'Target',
         r'\[Target_\(120px\)\.(png|jpg)\]': 'Target',
+        r'\[BL_Tiles100_Target\.(png|jpg)\]': 'Target',
         
         # Best & Less patterns
         r'\[BandL_Spring22_BL_W120\.(png|jpg)\]': 'Best_Less',
         r'\[Best_Less_\(120_x_40\)\.(png|jpg)\]': 'Best_Less',
-        
+        r'\[BL_Tiles100_Best_Less\.(png|jpg)\]': 'Best_Less',
+
         # Big W patterns
         r'\[BandL_Spring22_BigW_W120\.(png|jpg)\]': 'Big_W',
         r'\[Big_W_\(85px\)\.(png|jpg)\]': 'Big_W',
+        r'\[BL_Tiles100_BigW\.(png|jpg)\]': 'Big_W',
         
         # Cotton On patterns
         r'\[BandL_Spring22_CottonOn_W120\.(png|jpg)\]': 'Cotton_On',
         r'\[Cotton_On_\(120px\)\.(png|jpg)\]': 'Cotton_On',
+        r'\[BL_Tiles100_CottonOn\.(png|jpg)\]': 'Cotton_On',
     }
     
     # Convert date column
@@ -205,21 +233,41 @@ def clean_df(df: pd.DataFrame, use_llm: bool = False) -> pd.DataFrame:
 
 
 if __name__ == "__main__":
+    import argparse
+    
     # Load environment variables
-    load_dotenv(".azure/personas-dev/.env")
+    load_dotenv()
+    
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(description='Process Excel file with merged headers')
+    parser.add_argument('--header-rows', type=int, default=2, choices=[2, 3],
+                        help='Number of header rows to concatenate (default: 2)')
+    parser.add_argument('--no-brand-extraction', action='store_true',
+                        help='Skip brand extraction (by default, brand extraction with regex is enabled)')
+    args = parser.parse_args()
     
     # Example usage
-    input_file = "data_prep/input_datasets/BestLessBrandTrackingWinter2024_v2.xlsx"
+    # input_file = "data_prep/input_datasets/BestLessBrandTrackingWinter2024_v2.xlsx"
+    input_file = "data_prep/input_datasets/BestLessBrandTrackingWinter2025RAW.xlsx"
     output_json = "data_prep/input_datasets/structured_output.json"
     
     try:
-        # Process merged headers
-        df = process_merged_headers(input_file)
-        print(f"[ok] Loaded {len(df)} rows with {len(df.columns)} columns")
+        # Process merged headers with specified number of header rows
+        df = process_merged_headers(input_file, header_rows=args.header_rows)
+        print(f"[ok] Loaded {len(df)} rows with {len(df.columns)} columns (using {args.header_rows} header rows)")
         
-        # Clean data - set use_llm=True to use LLM, False for regex
-        df = clean_df(df, use_llm=False)  # Start with regex for speed
-        print(f"[ok] Cleaned {len(df)} rows")
+        # Clean data - brand extraction is enabled by default unless --no-brand-extraction is specified
+        if not args.no_brand_extraction:
+            df = clean_df(df, use_llm=False)  # Always use regex for brand extraction
+            print(f"[ok] Cleaned {len(df)} rows (brand extraction: enabled)")
+        else:
+            print(f"[ok] Skipped brand extraction")
+        
+        # Remove columns that contain [@Q57LF@] in their names
+        columns_to_remove = [col for col in df.columns if '[@Q57LF@]' in str(col)]
+        if columns_to_remove:
+            df = df.drop(columns=columns_to_remove)
+            print(f"[ok] Removed {len(columns_to_remove)} columns containing '[@Q57LF@]'")
         
         # Set Come-back-Later Code as index to remove it from columns
         if "Come-back-Later Code" in df.columns:
